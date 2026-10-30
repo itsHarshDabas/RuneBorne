@@ -6,8 +6,14 @@ import type { Ability } from '../data/srd'
 import { formatTerms, roll, type RollResult } from '../lib/dice'
 import { uid } from '../lib/util'
 import { starterBestiary } from '../data/monsters'
+import type { ItemDef } from '../data/items'
 
 export type Abilities = Record<Ability, number>
+export const COINS = ['cp', 'sp', 'ep', 'gp', 'pp'] as const
+export type Coins = Record<(typeof COINS)[number], number>
+/** One stack of an item someone is carrying. A copy of the catalog entry, so the GM can tweak it per copy. */
+export type InvItem = Omit<ItemDef, 'id' | 'custom'> & { id: string; defId?: string; qty: number; equipped?: boolean }
+export type Stash = { items: InvItem[]; coins: Coins }
 export type TarotDraw = { card: string; position: string; reversed: boolean }
 
 export type Character = {
@@ -32,7 +38,8 @@ export type Character = {
   spellAbility: Ability
   tarot: TarotDraw[]
   features: string
-  inventory: string
+  items: InvItem[]
+  coins: Coins
   notes: string
   color: string
 }
@@ -84,6 +91,8 @@ export type Combatant = {
   refId?: string
   /** The enemy template this came from, so its attacks can be rolled. */
   monsterId?: string
+  /** Treasure has been rolled for this defeated foe. */
+  looted?: boolean
 }
 
 export type Note = { id: string; title: string; body: string; tags: string; updatedAt: number }
@@ -135,7 +144,7 @@ export type PlaceEdit = { name?: string; state?: PlaceState; notes?: string }
 export type MapNpcEdit = { name?: string; role?: string; state?: MapNpcState; notes?: string }
 export type CustomMapNpc = { id: string; at: string; x: number; y: number; name: string; role: string }
 /** A generated world is stored as its seed plus whatever the GM changed, so it is identical on every load. */
-export type WorldSave = { seed: number; createdAt: number; places: Record<string, PlaceEdit>; npcs: Record<string, MapNpcEdit>; customNpcs: CustomMapNpc[] }
+export type WorldSave = { seed: number; createdAt: number; places: Record<string, PlaceEdit>; npcs: Record<string, MapNpcEdit>; customNpcs: CustomMapNpc[]; sold?: Record<string, Record<string, number>> }
 
 export type Macro = { id: string; name: string; expr: string }
 
@@ -158,6 +167,10 @@ export type GameData = {
   notes: Note[]
   map: MapBoard
   bestiary: Monster[]
+  /** Items the GM made, on top of the built-in catalog. */
+  customItems: ItemDef[]
+  /** The party's shared loot. */
+  stash: Stash
   world: WorldSave | null
   log: LogEntry[]
   macros: Macro[]
@@ -194,6 +207,8 @@ export function emptyGame(name = 'New Campaign'): GameData {
     notes: [],
     map: emptyMap(),
     bestiary: starterBestiary(),
+    customItems: [],
+    stash: { items: [], coins: emptyCoins() },
     world: null,
     log: [],
     macros: [
@@ -207,8 +222,12 @@ export function emptyGame(name = 'New Campaign'): GameData {
 }
 
 export function pickData(s: GameData): GameData {
-  const { version, campaignName, characters, spells, npcs, combat, notes, map, bestiary, world, log, macros, settings, activeCharacterId } = s
-  return { version, campaignName, characters, spells, npcs, combat, notes, map, bestiary, world, log, macros, settings, activeCharacterId }
+  const { version, campaignName, characters, spells, npcs, combat, notes, map, bestiary, customItems, stash, world, log, macros, settings, activeCharacterId } = s
+  return { version, campaignName, characters, spells, npcs, combat, notes, map, bestiary, customItems, stash, world, log, macros, settings, activeCharacterId }
+}
+
+export function emptyCoins(): Coins {
+  return { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }
 }
 
 export function emptyMap(): MapBoard {
@@ -233,6 +252,18 @@ export function normalizeGame(data: Partial<GameData>): Partial<GameData> {
     }
   }
   if (!Array.isArray(data.bestiary)) out.bestiary = starterBestiary()
+  if (!Array.isArray(data.customItems)) out.customItems = []
+  if (!data.stash) out.stash = { items: [], coins: emptyCoins() }
+  // Inventories used to be free text: keep each line as an item so nothing is lost
+  if (data.characters) {
+    out.characters = data.characters.map((c) => {
+      const old = c as Character & { inventory?: string }
+      if (Array.isArray(old.items)) return c
+      const { inventory = '', ...rest } = old
+      const items: InvItem[] = inventory.split('\n').map((l) => l.trim()).filter(Boolean).map((name) => ({ id: uid(), name, kind: 'gear', rarity: 'mundane', cost: 0, weight: 0, description: '', qty: 1 }))
+      return { ...rest, items, coins: emptyCoins() }
+    })
+  }
   return out
 }
 

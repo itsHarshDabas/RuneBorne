@@ -1,12 +1,13 @@
-import { ChevronLeft, ChevronRight, Dices, Play, Plus, Swords, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Coins, Dices, Play, Plus, Swords, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, Empty, Field, NumberInput } from '../components/ui'
 import { CONDITIONS } from '../data/srd'
 import { mod, rollExprWithBonus, signed, type Advantage } from '../lib/dice'
 import { nextTurn, rollAttack, setHp } from '../lib/combat'
-import { averageHp } from '../data/monsters'
+import { averageHp, crNumber } from '../data/monsters'
+import { addItem, allItems, rollLoot, toInv } from '../lib/items'
 import { clamp, uid } from '../lib/util'
-import { useGame, type Combatant } from '../store/game'
+import { useGame, type Coins as CoinPurse, type Combatant } from '../store/game'
 import { dialog } from '../lib/dialog'
 
 const SIDE_STYLE: Record<Combatant['side'], string> = {
@@ -31,6 +32,21 @@ export function Combat() {
   const [lastAttack, setLastAttack] = useState<{ hit: boolean; crit: boolean; text: string } | null>(null)
 
   const list = combat.combatants
+  const customItems = useGame((s) => s.customItems)
+  const [lootNote, setLootNote] = useState('')
+
+  /** Rolls treasure for a defeated foe by its CR and drops it in the party stash. */
+  function loot(c: Combatant) {
+    const m = bestiary.find((x) => x.id === c.monsterId)
+    const r = rollLoot(rollDice, crNumber(m?.cr ?? '1/4'), allItems({ customItems }))
+    edit((d) => {
+      for (const [k, v] of Object.entries(r.coins) as [keyof CoinPurse, number][]) d.stash.coins[k] += v
+      for (const it of r.items) addItem(d.stash.items, toInv(it))
+      const x = d.combat.combatants.find((y) => y.id === c.id)
+      if (x) x.looted = true
+    })
+    setLootNote(`${c.name} carried ${r.text}. It's in the party stash (Items tab).`)
+  }
   const current = list[combat.turn]
   const attacker = list.find((c) => c.id === attackerId) ?? current
   const target = list.find((c) => c.id === targetId)
@@ -116,6 +132,7 @@ export function Combat() {
           </>
         }
       >
+        {lootNote && <p className="mb-2 rounded-md bg-emerald-900/30 px-2 py-1.5 text-sm text-emerald-200">{lootNote}</p>}
         {list.length === 0 ? (
           <Empty>Add the party and some foes, then roll initiative.</Empty>
         ) : (
@@ -126,6 +143,7 @@ export function Combat() {
                 c={c}
                 active={i === combat.turn}
                 onHp={(hp) => edit((d) => setHp(d, c.id, hp))}
+                onLoot={c.side === 'foe' && c.hp <= 0 && !c.looted ? () => loot(c) : undefined}
                 onChange={(fn) => update(c.id, fn)}
                 onRemove={() => edit((d) => {
                   d.combat.combatants = d.combat.combatants.filter((x) => x.id !== c.id)
@@ -219,7 +237,7 @@ export function Combat() {
   )
 }
 
-function CombatRow({ c, active, onHp, onChange, onRemove }: { c: Combatant; active: boolean; onHp: (hp: number) => void; onChange: (fn: (c: Combatant) => void) => void; onRemove: () => void }) {
+function CombatRow({ c, active, onHp, onChange, onRemove, onLoot }: { c: Combatant; active: boolean; onHp: (hp: number) => void; onChange: (fn: (c: Combatant) => void) => void; onRemove: () => void; onLoot?: () => void }) {
   const [delta, setDelta] = useState(0)
   const down = c.hp <= 0
   return (
@@ -262,6 +280,7 @@ function CombatRow({ c, active, onHp, onChange, onRemove }: { c: Combatant; acti
           <option value="">+ Condition</option>
           {CONDITIONS.map((k) => <option key={k}>{k}</option>)}
         </select>
+        {onLoot && <Button size="sm" variant="primary" icon={Coins} onClick={onLoot}>Loot</Button>}
         <button type="button" className="px-1 text-muted hover:text-red-400" onClick={onRemove} aria-label={`Remove ${c.name}`}>×</button>
       </div>
       {c.conditions.length > 0 && (

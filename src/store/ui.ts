@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export const TABS = ['Dice', 'Characters', 'Spell Forge', 'NPCs', 'Combat', 'Map', 'Notes', 'Generators', 'Saves'] as const
+export const TABS = ['Dice', 'Characters', 'Spell Forge', 'NPCs', 'Combat', 'Items', 'Map', 'Notes', 'Generators', 'Saves'] as const
 export type Tab = (typeof TABS)[number]
 
 export type MapMode = 'world' | 'battle'

@@ -11,6 +11,7 @@ import { generateCity, type City, type CityNpc, type Lot } from './citygen'
 import { cityArt, cityScene, lotAt, NPC_STATE_COLOR, PLACE_STATE_COLOR } from './cityScene'
 import { BURG_ICON, POI_ICON, SITE_ICON } from './icons'
 import { PoiIconSprites } from './PoiIconSprites'
+import { ShopCard } from '../items/ShopCard'
 import { buildingInterior, interiorScene, lotTitle, placePeople, siteInterior, type Interior } from './interior'
 import { MapCanvas, type Hit, type MapCanvasHandle, type Scene } from './MapCanvas'
 import { POI_LABEL, type PoiType } from './pois'
@@ -301,6 +302,13 @@ function WorldExplorer({ save, onRegenerate }: { save: WorldSave; onRegenerate: 
   const selPerson = selected ? people.find((p) => p.id === selected) : undefined
   const selPlace = selected && !selPerson ? placeById(selected) : undefined
   const title = crumbs[crumbs.length - 1].label
+  const shop = (() => {
+    if (level.kind === 'building' && level.lot.poi) return { id: level.lot.id, poi: level.lot.poi, town: level.burg.type, title }
+    if (level.kind !== 'city' || !selected) return null
+    if (selected === `${level.burg.id}/market`) return { id: selected, poi: 'market', town: level.burg.type, title: nameOf(selected, 'Market Square') }
+    const lot = level.city.lots.find((l) => l.id === selected)
+    return lot?.poi ? { id: lot.id, poi: lot.poi, town: level.burg.type, title: nameOf(lot.id, lotTitle(lot)) } : null
+  })()
   const q = query.trim().toLowerCase()
   const shownPlaces = q ? places.filter((p) => p.name.toLowerCase().includes(q) || p.sub.toLowerCase().includes(q)) : places
   const shownPeople = q ? people.filter((p) => p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q)) : people
@@ -398,6 +406,8 @@ function WorldExplorer({ save, onRegenerate }: { save: WorldSave; onRegenerate: 
             </div>
           </Card>
         )}
+
+        {shop && <ShopCard key={shop.id} worldSeed={save.seed} placeId={shop.id} poi={shop.poi} townType={shop.town} title={shop.title} />}
 
         <Card title={level.kind === 'world' ? 'Places' : level.kind === 'city' ? 'Shops & landmarks' : 'Rooms'}>
           {(places.length > 12 || people.length > 12) && (
