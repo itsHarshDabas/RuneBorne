@@ -1,19 +1,20 @@
+import { Beer, CloudSun, Coins, Drama, Eye, Pin, ScrollText, User, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button, Card } from '../components/ui'
 import { FIRST_NAMES, LAST_NAMES, LOOT, NPC_TRAITS, PLOT_HOOKS, TAVERN_NAMES_A, TAVERN_NAMES_B, WEATHER } from '../data/homebrew'
 import { pick, uid } from '../lib/util'
 import { useGame } from '../store/game'
 
-const GENERATORS: { name: string; icon: string; make: () => string }[] = [
-  { name: 'Name', icon: '🧙', make: () => `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}` },
-  { name: 'Tavern', icon: '🍺', make: () => `The ${pick(TAVERN_NAMES_A)} ${pick(TAVERN_NAMES_B)}` },
-  { name: 'Loot', icon: '💰', make: () => pick(LOOT) },
-  { name: 'Plot hook', icon: '📜', make: () => pick(PLOT_HOOKS) },
-  { name: 'Weather', icon: '🌦', make: () => pick(WEATHER) },
-  { name: 'Quirk', icon: '🎭', make: () => pick(NPC_TRAITS) },
+const GENERATORS: { name: string; icon: LucideIcon; make: () => string }[] = [
+  { name: 'Name', icon: User, make: () => `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}` },
+  { name: 'Tavern', icon: Beer, make: () => `The ${pick(TAVERN_NAMES_A)} ${pick(TAVERN_NAMES_B)}` },
+  { name: 'Loot', icon: Coins, make: () => pick(LOOT) },
+  { name: 'Plot hook', icon: ScrollText, make: () => pick(PLOT_HOOKS) },
+  { name: 'Weather', icon: CloudSun, make: () => pick(WEATHER) },
+  { name: 'Quirk', icon: Drama, make: () => pick(NPC_TRAITS) },
   {
     name: 'Yes / No oracle',
-    icon: '🔮',
+    icon: Eye,
     make: () => pick(['Yes', 'Yes, and…', 'Yes, but…', 'No', 'No, and…', 'No, but…', 'Maybe. Roll again later.']),
   },
 ]
@@ -37,7 +38,7 @@ export function Generators() {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {GENERATORS.map((g) => (
             <button key={g.name} type="button" onClick={() => generate(g)} className="rounded-xl border border-edge bg-panel-2/60 p-3 text-left transition hover:-translate-y-0.5 hover:border-gold">
-              <div className="text-2xl">{g.icon}</div>
+              <g.icon size={24} className="text-gold" />
               <div className="mt-1 text-sm font-semibold">{g.name}</div>
             </button>
           ))}
@@ -52,7 +53,7 @@ export function Generators() {
                 <div className="text-xs uppercase tracking-wider text-muted">{r.kind}</div>
                 <div>{r.text}</div>
               </div>
-              <Button size="sm" variant="subtle" onClick={() => saveToNotes(r.text, r.kind)} title="Save to notes">📌</Button>
+              <Button size="sm" variant="subtle" onClick={() => saveToNotes(r.text, r.kind)} title="Save to notes" aria-label="Save to notes" icon={Pin} />
             </li>
           ))}
         </ul>

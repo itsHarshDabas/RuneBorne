@@ -1,8 +1,10 @@
+import type { LucideIcon } from 'lucide-react'
 import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'ghost' | 'danger' | 'subtle'
   size?: 'sm' | 'md'
+  icon?: LucideIcon
 }
 
 const VARIANTS = {
@@ -12,14 +14,17 @@ const VARIANTS = {
   subtle: 'bg-panel-2 text-parch hover:bg-edge',
 }
 
-export function Button({ variant = 'ghost', size = 'md', className = '', ...props }: ButtonProps) {
+export function Button({ variant = 'ghost', size = 'md', className = '', icon: Icon, children, ...props }: ButtonProps) {
   const sizing = size === 'sm' ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'
   return (
     <button
       type="button"
-      className={`rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${sizing} ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${sizing} ${VARIANTS[variant]} ${className}`}
       {...props}
-    />
+    >
+      {Icon && <Icon size={size === 'sm' ? 13 : 15} className="shrink-0" />}
+      {children}
+    </button>
   )
 }
 
@@ -67,7 +72,7 @@ export function Combo({ value, onChange, options, placeholder, id }: { value: st
         {options.map((o) => (
           <option key={o}>{o}</option>
         ))}
-        <option value={CUSTOM}>✏ Homebrew…</option>
+        <option value={CUSTOM}>Homebrew (type your own)…</option>
       </select>
       {showInput && <input id={id} className="input" autoFocus value={value} placeholder={placeholder ?? 'Type your own'} onChange={(e) => onChange(e.target.value)} />}
     </div>

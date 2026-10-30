@@ -1,3 +1,4 @@
+import { Dices, Plus, Swords } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, Combo, Empty, Field, NumberInput } from '../components/ui'
 import { ATTITUDES, FIRST_NAMES, LAST_NAMES, NPC_ROLES, NPC_SECRETS, NPC_TRAITS, NPC_WANTS, reactionShift, type Attitude } from '../data/homebrew'
@@ -63,8 +64,8 @@ export function Npcs() {
     <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
       <Card title="NPCs">
         <div className="mb-3 flex gap-2">
-          <Button variant="primary" size="sm" onClick={() => add(randomNpc())}>🎲 Random NPC</Button>
-          <Button size="sm" onClick={() => add({ ...randomNpc(), name: 'New NPC', trait: '', want: '', secret: '' })}>+ Blank</Button>
+          <Button variant="primary" size="sm" onClick={() => add(randomNpc())} icon={Dices}>Random NPC</Button>
+          <Button size="sm" onClick={() => add({ ...randomNpc(), name: 'New NPC', trait: '', want: '', secret: '' })} icon={Plus}>Blank</Button>
         </div>
         <input className="input mb-2" placeholder="Search…" value={filter} onChange={(e) => setFilter(e.target.value)} />
         <ul className="max-h-[60vh] space-y-1 overflow-y-auto">
@@ -163,7 +164,7 @@ function NpcDetail({ npc, characters, onDelete, onFight }: { npc: Npc; character
         title={<input className="w-full bg-transparent font-display text-xl text-gold outline-none" value={npc.name} onChange={(e) => update((n) => void (n.name = e.target.value))} />}
         actions={
           <>
-            <Button size="sm" onClick={onFight}>⚔ Add to combat</Button>
+            <Button size="sm" onClick={onFight} icon={Swords}>Add to combat</Button>
             <Button size="sm" variant="danger" onClick={() => confirm(`Delete ${npc.name}?`) && onDelete()}>Delete</Button>
           </>
         }
@@ -178,7 +179,7 @@ function NpcDetail({ npc, characters, onDelete, onFight }: { npc: Npc; character
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <Field label="Personality"><input className="input" value={npc.trait} onChange={(e) => update((n) => void (n.trait = e.target.value))} /></Field>
           <Field label="Wants"><input className="input" value={npc.want} onChange={(e) => update((n) => void (n.want = e.target.value))} /></Field>
-          <Field label="Secret (DM only 🤫)"><input className="input" value={npc.secret} onChange={(e) => update((n) => void (n.secret = e.target.value))} /></Field>
+          <Field label="Secret (DM only)"><input className="input" value={npc.secret} onChange={(e) => update((n) => void (n.secret = e.target.value))} /></Field>
         </div>
         <Field label="Notes" className="mt-3"><textarea className="input min-h-16" value={npc.notes} onChange={(e) => update((n) => void (n.notes = e.target.value))} /></Field>
       </Card>
@@ -214,7 +215,7 @@ function NpcDetail({ npc, characters, onDelete, onFight }: { npc: Npc; character
                 <Field label={`DC (${npc.attitude} = ${ATTITUDE_DC[npc.attitude]})`} className="w-36">
                   <NumberInput value={dc} onChange={setDcOverride} />
                 </Field>
-                <Button variant="primary" onClick={socialCheck}>🎲 Roll {skill}</Button>
+                <Button variant="primary" onClick={socialCheck} icon={Dices}>Roll {skill}</Button>
                 <Button onClick={reactionRoll} title="2d6 + CHA mod, for first meetings">First impression</Button>
               </div>
             </div>

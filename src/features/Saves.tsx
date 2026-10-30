@@ -1,3 +1,4 @@
+import { Download, Save, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { Button, Card, Field, NumberInput } from '../components/ui'
 import { downloadJson } from '../lib/util'
@@ -65,10 +66,10 @@ export function Saves() {
         </Field>
         <p className="mt-2 text-xs text-muted">Everything saves automatically in this browser. Use slots for checkpoints and files to back up or share with another computer.</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button variant="primary" onClick={saveSlot}>💾 Save to slot</Button>
-          <Button onClick={() => downloadJson(`${game.campaignName.replace(/[^\w-]+/g, '_') || 'campaign'}.runeborne.json`, pickData(game))}>⬇ Export file</Button>
-          <label className="cursor-pointer rounded-md border border-edge px-3 py-1.5 text-sm hover:border-gold hover:text-gold">
-            ⬆ Import file
+          <Button variant="primary" onClick={saveSlot} icon={Save}>Save to slot</Button>
+          <Button onClick={() => downloadJson(`${game.campaignName.replace(/[^\w-]+/g, '_') || 'campaign'}.runeborne.json`, pickData(game))} icon={Download}>Export file</Button>
+          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-edge px-3 py-1.5 text-sm hover:border-gold hover:text-gold">
+            <Upload size={15} /> Import file
             <input type="file" accept=".json,application/json" className="hidden" onChange={(e) => importFile(e.target.files?.[0])} />
           </label>
           <Button
