@@ -8,6 +8,7 @@ import { clamp } from '../../lib/util'
 import { useGame, type Character } from '../../store/game'
 import { TarotCardView } from './CharacterCreator'
 import { dialog } from '../../lib/dialog'
+import { Inventory } from '../items/Inventory'
 
 export function CharacterSheet({ c }: { c: Character }) {
   const edit = useGame((s) => s.edit)
@@ -200,10 +201,13 @@ export function CharacterSheet({ c }: { c: Character }) {
           )}
         </Card>
 
-        <Card title="Features, gear & notes">
+        <Card title="Inventory">
+          <Inventory owner={c.id} />
+        </Card>
+
+        <Card title="Features & notes">
           <div className="space-y-3">
             <Field label="Features & traits"><textarea className="input min-h-20" value={c.features} onChange={(e) => update((ch) => void (ch.features = e.target.value))} /></Field>
-            <Field label="Inventory"><textarea className="input min-h-20" value={c.inventory} onChange={(e) => update((ch) => void (ch.inventory = e.target.value))} /></Field>
             <Field label="Notes"><textarea className="input min-h-16" value={c.notes} onChange={(e) => update((ch) => void (ch.notes = e.target.value))} /></Field>
           </div>
         </Card>

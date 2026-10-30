@@ -1,4 +1,4 @@
-import { Dices, Map as MapIcon, MessageCircle, Save, ScrollText, Shield, Sparkles, Swords, Wand, type LucideIcon } from 'lucide-react'
+import { Backpack, Dices, Map as MapIcon, MessageCircle, Save, ScrollText, Shield, Sparkles, Swords, Wand, type LucideIcon } from 'lucide-react'
 import { lazy, Suspense } from 'react'
 import { DialogHost } from './components/Dialog'
 import { RollLog } from './components/RollLog'
@@ -6,6 +6,7 @@ import { Characters } from './features/characters/Characters'
 import { Combat } from './features/Combat'
 import { DiceTray } from './features/DiceTray'
 import { Generators } from './features/Generators'
+import { Items } from './features/items/Items'
 import { Notes } from './features/Notes'
 import { Npcs } from './features/Npcs'
 import { Saves } from './features/Saves'
@@ -22,6 +23,7 @@ const VIEWS: Record<Tab, React.ComponentType> = {
   'Spell Forge': SpellForge,
   NPCs: Npcs,
   Combat,
+  Items,
   Map: MapTab,
   Notes,
   Generators,
@@ -29,7 +31,7 @@ const VIEWS: Record<Tab, React.ComponentType> = {
 }
 
 const ICONS: Record<Tab, LucideIcon> = {
-  Dice: Dices, Characters: Shield, 'Spell Forge': Sparkles, NPCs: MessageCircle, Combat: Swords, Map: MapIcon, Notes: ScrollText, Generators: Wand, Saves: Save,
+  Dice: Dices, Characters: Shield, 'Spell Forge': Sparkles, NPCs: MessageCircle, Combat: Swords, Items: Backpack, Map: MapIcon, Notes: ScrollText, Generators: Wand, Saves: Save,
 }
 
 export default function App() {
