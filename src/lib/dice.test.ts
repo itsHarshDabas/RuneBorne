@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyAdvantage, mod, roll } from './dice'
+import { applyAdvantage, averageRoll, mod, roll } from './dice'
 
 describe('roll', () => {
   it('adds constants and dice within range', () => {
@@ -86,5 +86,14 @@ describe('helpers', () => {
 
   it('computes ability modifiers', () => {
     expect([1, 8, 9, 10, 11, 15, 20].map(mod)).toEqual([-5, -1, -1, 0, 0, 2, 5])
+  })
+})
+
+describe('averageRoll', () => {
+  it('matches stat block averages', () => {
+    expect(averageRoll('2d8+2')).toBe(11)
+    expect(averageRoll('7d10+21')).toBe(59)
+    expect(averageRoll('15')).toBe(15)
+    expect(averageRoll('4d6dl1')).toBeNull()
   })
 })

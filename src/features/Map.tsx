@@ -1,6 +1,6 @@
 import { Globe, Grid3x3 } from 'lucide-react'
 import { useUi } from '../store/ui'
-import { MapBoard } from './MapBoard'
+import { BattleMap } from './battle/BattleMap'
 import { WorldMap } from './world/WorldMap'
 
 export function MapTab() {
@@ -18,7 +18,7 @@ export function MapTab() {
           </button>
         ))}
       </div>
-      {mode === 'world' ? <WorldMap /> : <MapBoard />}
+      {mode === 'world' ? <WorldMap /> : <BattleMap />}
     </div>
   )
 }

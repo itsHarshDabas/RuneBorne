@@ -2,9 +2,11 @@ import { ChevronLeft, ChevronRight, Dices, Play, Plus, Swords, Users } from 'luc
 import { useState } from 'react'
 import { Badge, Button, Card, Empty, Field, NumberInput } from '../components/ui'
 import { CONDITIONS } from '../data/srd'
-import { applyAdvantage, mod, rollExprWithBonus, signed, type Advantage } from '../lib/dice'
+import { mod, rollExprWithBonus, signed, type Advantage } from '../lib/dice'
+import { nextTurn, rollAttack, setHp } from '../lib/combat'
+import { averageHp } from '../data/monsters'
 import { clamp, uid } from '../lib/util'
-import { useGame, type Combatant, type GameData } from '../store/game'
+import { useGame, type Combatant } from '../store/game'
 import { dialog } from '../lib/dialog'
 
 const SIDE_STYLE: Record<Combatant['side'], string> = {
@@ -13,22 +15,14 @@ const SIDE_STYLE: Record<Combatant['side'], string> = {
   foe: 'border-l-red-500',
 }
 
-function setHp(d: GameData, id: string, hp: number) {
-  const c = d.combat.combatants.find((x) => x.id === id)
-  if (!c) return
-  c.hp = clamp(hp, 0, c.maxHp)
-  // Keep the character sheet in sync for party members
-  const pc = c.refId ? d.characters.find((x) => x.id === c.refId) : undefined
-  if (pc && c.side === 'party') pc.hp = c.hp
-}
-
 export function Combat() {
   const combat = useGame((s) => s.combat)
   const characters = useGame((s) => s.characters)
   const edit = useGame((s) => s.edit)
   const rollDice = useGame((s) => s.rollDice)
+  const bestiary = useGame((s) => s.bestiary)
 
-  const [foe, setFoe] = useState({ name: 'Goblin', hp: 7, ac: 15, initBonus: 2, count: 1 })
+  const [foe, setFoe] = useState<{ name: string; hp: number; ac: number; initBonus: number; count: number; monsterId?: string }>({ name: 'Goblin', hp: 7, ac: 15, initBonus: 2, count: 1 })
   const [attackerId, setAttackerId] = useState('')
   const [targetId, setTargetId] = useState('')
   const [attackBonus, setAttackBonus] = useState(4)
@@ -63,6 +57,7 @@ export function Combat() {
           ac: foe.ac,
           conditions: [],
           side: 'foe',
+          monsterId: foe.monsterId,
         })
       }
     })
@@ -81,42 +76,19 @@ export function Combat() {
     })
   }
 
-  function nextTurn(dir: 1 | -1) {
-    edit((d) => {
-      const n = d.combat.combatants.length
-      if (!n) return
-      let t = d.combat.turn + dir
-      if (t >= n) {
-        t = 0
-        d.combat.round += 1
-      } else if (t < 0) {
-        t = n - 1
-        d.combat.round = Math.max(1, d.combat.round - 1)
-      }
-      d.combat.turn = t
-    })
+  function turn(dir: 1 | -1) {
+    edit((d) => nextTurn(d, dir))
     setLastAttack(null)
   }
 
   function attack() {
     if (!target) return
-    const r = rollDice(applyAdvantage(rollExprWithBonus(attackBonus), adv), `Attack → ${target.name} (AC ${target.ac})`, attacker?.name)
-    const crit = r.crit === 'hit'
-    const hit = crit || (r.crit !== 'miss' && r.total >= target.ac)
-    let text = `${r.total} vs AC ${target.ac}: ${crit ? 'CRITICAL HIT!' : hit ? 'Hit' : 'Miss'}`
-    if (hit && damageExpr.trim()) {
-      // Critical hits double the damage dice (not the modifier)
-      const dmgExpr = crit ? damageExpr.replace(/(\d*)d(\d+)/gi, (_, n, s) => `${(Number(n) || 1) * 2}d${s}`) : damageExpr
-      try {
-        const dmg = rollDice(dmgExpr, `Damage → ${target.name}`, attacker?.name)
-        edit((d) => setHp(d, target.id, target.hp - Math.max(0, dmg.total)))
-        text += ` for ${Math.max(0, dmg.total)} damage`
-      } catch (e) {
-        text += ` (damage: ${(e as Error).message})`
-      }
-    }
-    setLastAttack({ hit, crit, text })
+    const out = rollAttack(rollDice, { who: attacker?.name, targetName: target.name, targetAc: target.ac, bonus: attackBonus, damage: damageExpr, adv })
+    if (out.damage) edit((d) => setHp(d, target.id, target.hp - out.damage))
+    setLastAttack(out)
   }
+
+  const attackerMonster = bestiary.find((m) => m.id === attacker?.monsterId)
 
   const update = (id: string, fn: (c: Combatant) => void) =>
     edit((d) => {
@@ -130,8 +102,8 @@ export function Combat() {
         title={<>Combat · Round {combat.round}</>}
         actions={
           <>
-            <Button size="sm" onClick={() => nextTurn(-1)} disabled={!list.length} icon={ChevronLeft}>Prev</Button>
-            <Button size="sm" variant="primary" onClick={() => nextTurn(1)} disabled={!list.length} icon={ChevronRight}>Next turn</Button>
+            <Button size="sm" onClick={() => turn(-1)} disabled={!list.length} icon={ChevronLeft}>Prev</Button>
+            <Button size="sm" variant="primary" onClick={() => turn(1)} disabled={!list.length} icon={ChevronRight}>Next turn</Button>
             <Button size="sm" onClick={() => rollInitiative(false)} disabled={!list.length} icon={Dices}>Roll all initiative</Button>
             <Button
               size="sm"
@@ -169,6 +141,22 @@ export function Combat() {
         <Card title="Add combatants">
           <Button className="mb-3 w-full" onClick={addParty} disabled={!characters.length} icon={Users}>Add the whole party</Button>
           <div className="grid grid-cols-2 gap-2">
+            {bestiary.length > 0 && (
+              <Field label="From your enemies" className="col-span-2">
+                <select
+                  className="input"
+                  value={foe.monsterId ?? ''}
+                  onChange={(e) => {
+                    const m = bestiary.find((x) => x.id === e.target.value)
+                    if (m) setFoe({ ...foe, name: m.name, hp: averageHp(m), ac: m.ac, initBonus: m.initBonus, monsterId: m.id })
+                    else setFoe({ ...foe, monsterId: undefined })
+                  }}
+                >
+                  <option value="">Custom…</option>
+                  {bestiary.map((m) => <option key={m.id} value={m.id}>{m.name} (CR {m.cr})</option>)}
+                </select>
+              </Field>
+            )}
             <Field label="Name" className="col-span-2"><input className="input" value={foe.name} onChange={(e) => setFoe({ ...foe, name: e.target.value })} /></Field>
             <Field label="HP"><NumberInput value={foe.hp} onChange={(hp) => setFoe({ ...foe, hp })} /></Field>
             <Field label="AC"><NumberInput value={foe.ac} onChange={(ac) => setFoe({ ...foe, ac })} /></Field>
@@ -198,6 +186,15 @@ export function Combat() {
                     {list.filter((c) => c.id !== attacker?.id).map((c) => <option key={c.id} value={c.id}>{c.name} (AC {c.ac})</option>)}
                   </select>
                 </Field>
+                {attackerMonster && attackerMonster.attacks.length > 0 && (
+                  <div className="col-span-2 flex flex-wrap gap-1">
+                    {attackerMonster.attacks.map((a) => (
+                      <Button key={a.id} size="sm" variant="subtle" onClick={() => { setAttackBonus(a.bonus); setDamageExpr(a.damage) }} title={a.notes}>
+                        {a.name} {signed(a.bonus)}
+                      </Button>
+                    ))}
+                  </div>
+                )}
                 <Field label="Attack bonus"><NumberInput value={attackBonus} onChange={setAttackBonus} /></Field>
                 <Field label="Damage"><input className="input font-mono" value={damageExpr} onChange={(e) => setDamageExpr(e.target.value)} /></Field>
               </div>

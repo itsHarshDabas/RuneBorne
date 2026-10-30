@@ -192,9 +192,15 @@ function WorldExplorer({ save, onRegenerate }: { save: WorldSave; onRegenerate: 
       ctx.drawImage(img, 0, 0)
       URL.revokeObjectURL(url)
       const data = c.toDataURL('image/jpeg', 0.85)
+      // Interiors are drawn on a 20-unit grid, so their squares line up with the battle grid
+      const interior = level.kind === 'site' || level.kind === 'building'
+      const cols = interior ? Math.round(box.w / 20) : 30
       edit((d) => {
         d.map.image = data
-        d.map.showGrid = false
+        d.map.gen = null
+        d.map.cols = cols
+        d.map.rows = Math.max(1, Math.round((cols * box.h) / box.w))
+        d.map.showGrid = !interior
       })
       useUi.getState().setMapMode('battle')
     }
