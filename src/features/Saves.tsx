@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Button, Card, Field, NumberInput } from '../components/ui'
 import { downloadJson } from '../lib/util'
 import { pickData, useGame, type GameData, type Settings } from '../store/game'
+import { dialog } from '../lib/dialog'
 
 const SLOTS_KEY = 'runeborne-slots'
 type Slot = { name: string; savedAt: number; data: GameData }
@@ -31,14 +32,14 @@ export function Saves() {
     }
   }
 
-  function saveSlot() {
-    const name = prompt('Name this save', `${game.campaignName} · ${new Date().toLocaleDateString()}`)
+  async function saveSlot() {
+    const name = await dialog.prompt({ title: 'Name this save', defaultValue: `${game.campaignName} · ${new Date().toLocaleDateString()}` })
     if (!name) return
     if (writeSlots([{ name, savedAt: Date.now(), data: pickData(game) }, ...slots])) setMessage(`Saved "${name}".`)
   }
 
-  function loadSlot(s: Slot) {
-    if (!confirm(`Load "${s.name}"? Unsaved progress in the current campaign will be replaced.`)) return
+  async function loadSlot(s: Slot) {
+    if (!(await dialog.confirm({ title: `Load "${s.name}"?`, message: 'Unsaved progress in the current campaign will be replaced.', confirmLabel: 'Load' }))) return
     game.replaceAll(s.data)
     setMessage(`Loaded "${s.name}".`)
   }
@@ -48,7 +49,7 @@ export function Saves() {
     try {
       const data = JSON.parse(await file.text()) as GameData
       if (data.version !== 1 || !Array.isArray(data.characters)) throw new Error('not a RuneBorne save')
-      if (!confirm(`Load "${data.campaignName}" from file? The current campaign will be replaced.`)) return
+      if (!(await dialog.confirm({ title: `Load "${data.campaignName}" from file?`, message: 'The current campaign will be replaced.', confirmLabel: 'Load' }))) return
       game.replaceAll(data)
       setMessage(`Imported "${data.campaignName}".`)
     } catch (e) {
@@ -74,8 +75,8 @@ export function Saves() {
           </label>
           <Button
             variant="danger"
-            onClick={() => {
-              const name = prompt('Name for the new campaign? (Export or save first if you want to keep the current one.)', 'New Campaign')
+            onClick={async () => {
+              const name = await dialog.prompt({ title: 'Start a new campaign', message: 'Export or save first if you want to keep the current one.', defaultValue: 'New Campaign', confirmLabel: 'Create' })
               if (name) game.newCampaign(name)
             }}
           >
@@ -96,7 +97,7 @@ export function Saves() {
                   <div className="text-xs text-muted">{new Date(s.savedAt).toLocaleString()} · {s.data.characters.length} characters</div>
                 </div>
                 <Button size="sm" onClick={() => loadSlot(s)}>Load</Button>
-                <Button size="sm" variant="danger" onClick={() => confirm(`Delete "${s.name}"?`) && writeSlots(slots.filter((_, j) => j !== i))}>×</Button>
+                <Button size="sm" variant="danger" onClick={async () => (await dialog.confirm({ title: `Delete "${s.name}"?`, confirmLabel: 'Delete', danger: true })) && writeSlots(slots.filter((_, j) => j !== i))}>×</Button>
               </li>
             ))}
           </ul>

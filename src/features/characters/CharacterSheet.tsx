@@ -7,6 +7,7 @@ import { applyAdvantage, mod, rollExprWithBonus, signed, type Advantage } from '
 import { clamp } from '../../lib/util'
 import { useGame, type Character } from '../../store/game'
 import { TarotCardView } from './CharacterCreator'
+import { dialog } from '../../lib/dialog'
 
 export function CharacterSheet({ c }: { c: Character }) {
   const edit = useGame((s) => s.edit)
@@ -47,10 +48,10 @@ export function CharacterSheet({ c }: { c: Character }) {
     })
   }
 
-  function castSpell(spellId: string) {
+  async function castSpell(spellId: string) {
     const sp = spells.find((s) => s.id === spellId)
     if (!sp) return
-    if (c.mana < sp.manaCost && !confirm(`${c.name} only has ${c.mana} mana. Cast anyway and go negative?`)) return
+    if (c.mana < sp.manaCost && !(await dialog.confirm({ title: 'Not enough mana', message: `${c.name} only has ${c.mana} mana (needs ${sp.manaCost}). Cast anyway and go negative?`, confirmLabel: 'Cast anyway', danger: true }))) return
     update((ch) => void (ch.mana -= sp.manaCost))
     if (sp.damage) rollDice(sp.damage, `${sp.name} (${sp.tier})`, c.name)
   }

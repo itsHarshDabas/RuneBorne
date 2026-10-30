@@ -37,3 +37,25 @@ body {
   100% { transform: rotate(0) scale(1) }
 }
 .tumble { animation: tumble .45s ease-out; }
+
+/* Themed scrollbars (Firefox + Chromium/Safari) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-edge) transparent;
+}
+*:hover { scrollbar-color: #5a4d3e transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-edge);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-gold); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+html { color-scheme: dark; }
+
+@keyframes fade-in { from { opacity: 0 } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(6px) scale(.97) } }
+::selection { background: rgb(212 162 76 / .35); color: var(--color-parch); }

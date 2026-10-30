@@ -5,6 +5,7 @@ import { CONDITIONS } from '../data/srd'
 import { applyAdvantage, mod, rollExprWithBonus, signed, type Advantage } from '../lib/dice'
 import { clamp, uid } from '../lib/util'
 import { useGame, type Combatant, type GameData } from '../store/game'
+import { dialog } from '../lib/dialog'
 
 const SIDE_STYLE: Record<Combatant['side'], string> = {
   party: 'border-l-sky-400',
@@ -135,7 +136,7 @@ export function Combat() {
             <Button
               size="sm"
               variant="danger"
-              onClick={() => confirm('End combat and clear the tracker?') && edit((d) => void (d.combat = { round: 1, turn: 0, combatants: [] }))}
+              onClick={async () => (await dialog.confirm({ title: 'End combat?', message: 'This clears the initiative tracker.', confirmLabel: 'End combat', danger: true })) && edit((d) => void (d.combat = { round: 1, turn: 0, combatants: [] }))}
               disabled={!list.length}
             >
               End combat

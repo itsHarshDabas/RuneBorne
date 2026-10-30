@@ -8,6 +8,7 @@ import { mod, signed } from '../lib/dice'
 import { clamp, pick, uid } from '../lib/util'
 import { useGame, type Npc } from '../store/game'
 import { useUi } from '../store/ui'
+import { dialog } from '../lib/dialog'
 
 const ATTITUDE_COLORS: Record<Attitude, string> = {
   Hostile: 'bg-red-700',
@@ -165,7 +166,7 @@ function NpcDetail({ npc, characters, onDelete, onFight }: { npc: Npc; character
         actions={
           <>
             <Button size="sm" onClick={onFight} icon={Swords}>Add to combat</Button>
-            <Button size="sm" variant="danger" onClick={() => confirm(`Delete ${npc.name}?`) && onDelete()}>Delete</Button>
+            <Button size="sm" variant="danger" onClick={async () => (await dialog.confirm({ title: `Delete ${npc.name}?`, confirmLabel: 'Delete', danger: true })) && onDelete()}>Delete</Button>
           </>
         }
       >

@@ -10,6 +10,7 @@ import { NPC_STATE_COLOR, PLACE_STATE_COLOR, POI_COLOR, POI_ICON, SETTLEMENT_ICO
 import { PanZoom } from './PanZoom'
 import { levelBox, parentPath, resolveLevel, type Level } from './resolve'
 import { terrainImage } from './terrainImage'
+import { dialog } from '../../lib/dialog'
 
 type Person = { id: string; name: string; role: string; state: MapNpcState; notes: string; x: number; y: number; custom: boolean; inside?: boolean; trait?: string; secret?: string }
 type PlaceItem = { id: string; name: string; sub: string; state: PlaceState; notes: string; enter?: string; detail?: string; x: number; y: number }
@@ -249,7 +250,7 @@ function WorldExplorer({ save, onRegenerate }: { save: WorldSave; onRegenerate: 
           title={levelTitle(level, world, save)}
           actions={
             level.kind === 'world' ? (
-              <Button size="sm" variant="danger" onClick={() => confirm('Generate a brand new world? Your edits to this one will be lost (export a save first if you want to keep it).') && onRegenerate(Math.floor(Math.random() * 1_000_000))} icon={Shuffle}>New world</Button>
+              <Button size="sm" variant="danger" onClick={async () => (await dialog.confirm({ title: 'Generate a new world?', message: 'Your edits to this world will be lost. Export a save first if you want to keep it.', confirmLabel: 'New world', danger: true })) && onRegenerate(Math.floor(Math.random() * 1_000_000))} icon={Shuffle}>New world</Button>
             ) : undefined
           }
         >
