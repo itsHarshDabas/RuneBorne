@@ -5,6 +5,7 @@ import type { Attitude } from '../data/homebrew'
 import type { Ability } from '../data/srd'
 import { formatTerms, roll, type RollResult } from '../lib/dice'
 import { uid } from '../lib/util'
+import { starterBestiary } from '../data/monsters'
 
 export type Abilities = Record<Ability, number>
 export type TarotDraw = { card: string; position: string; reversed: boolean }
@@ -81,12 +82,39 @@ export type Combatant = {
   conditions: string[]
   side: 'party' | 'foe' | 'ally'
   refId?: string
+  /** The enemy template this came from, so its attacks can be rolled. */
+  monsterId?: string
 }
 
 export type Note = { id: string; title: string; body: string; tags: string; updatedAt: number }
 
-export type Token = { id: string; label: string; color: string; x: number; y: number }
-export type MapBoard = { image: string; grid: number; showGrid: boolean; tokens: Token[] }
+export const CREATURE_SIZES = ['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan'] as const
+export type CreatureSize = (typeof CREATURE_SIZES)[number]
+export type Attack = { id: string; name: string; bonus: number; damage: string; notes: string }
+/** A reusable enemy template the DM builds once and drops on the map as many times as needed. */
+export type Monster = {
+  id: string
+  name: string
+  size: CreatureSize
+  type: string
+  cr: string
+  ac: number
+  hp: string
+  speed: string
+  initBonus: number
+  abilities: Abilities
+  attacks: Attack[]
+  traits: string
+  color: string
+  icon: string
+}
+
+export type TokenSide = 'party' | 'foe' | 'ally' | 'neutral'
+/** x/y are the token's centre in grid cells; size is how many cells wide it is. */
+export type Token = { id: string; label: string; color: string; x: number; y: number; size: number; side: TokenSide; icon?: string; combatantId?: string; monsterId?: string; refId?: string }
+export type BattleGen = { preset: string; seed: number }
+/** Either an uploaded/exported image or a generated map (stored as preset + seed, so it costs no storage). */
+export type MapBoard = { image: string; gen: BattleGen | null; cols: number; rows: number; showGrid: boolean; snap: boolean; tokens: Token[] }
 
 export type LogEntry = {
   id: string
@@ -129,6 +157,7 @@ export type GameData = {
   combat: { round: number; turn: number; combatants: Combatant[] }
   notes: Note[]
   map: MapBoard
+  bestiary: Monster[]
   world: WorldSave | null
   log: LogEntry[]
   macros: Macro[]
@@ -163,7 +192,8 @@ export function emptyGame(name = 'New Campaign'): GameData {
     npcs: [],
     combat: { round: 1, turn: 0, combatants: [] },
     notes: [],
-    map: { image: '', grid: 50, showGrid: true, tokens: [] },
+    map: emptyMap(),
+    bestiary: starterBestiary(),
     world: null,
     log: [],
     macros: [
@@ -177,8 +207,33 @@ export function emptyGame(name = 'New Campaign'): GameData {
 }
 
 export function pickData(s: GameData): GameData {
-  const { version, campaignName, characters, spells, npcs, combat, notes, map, world, log, macros, settings, activeCharacterId } = s
-  return { version, campaignName, characters, spells, npcs, combat, notes, map, world, log, macros, settings, activeCharacterId }
+  const { version, campaignName, characters, spells, npcs, combat, notes, map, bestiary, world, log, macros, settings, activeCharacterId } = s
+  return { version, campaignName, characters, spells, npcs, combat, notes, map, bestiary, world, log, macros, settings, activeCharacterId }
+}
+
+export function emptyMap(): MapBoard {
+  return { image: '', gen: { preset: 'forest', seed: 1 }, cols: 30, rows: 20, showGrid: true, snap: true, tokens: [] }
+}
+
+/** Brings saves from older versions up to date (adds missing fields, converts old % token positions to grid cells). */
+export function normalizeGame(data: Partial<GameData>): Partial<GameData> {
+  const out = { ...data }
+  const map = data.map as (Partial<MapBoard> & { grid?: number }) | undefined
+  if (map && map.cols === undefined) {
+    const cols = 30
+    const rows = 20
+    out.map = {
+      image: map.image ?? '',
+      gen: map.image ? null : emptyMap().gen,
+      cols,
+      rows,
+      showGrid: map.showGrid ?? true,
+      snap: true,
+      tokens: (map.tokens ?? []).map((t) => ({ ...t, x: (t.x / 100) * cols, y: (t.y / 100) * rows, size: 1, side: 'neutral' as const })),
+    }
+  }
+  if (!Array.isArray(data.bestiary)) out.bestiary = starterBestiary()
+  return out
 }
 
 
@@ -204,7 +259,7 @@ export const useGame = create<GameData & Actions>()(
         })
         return r
       },
-      replaceAll: (data) => set(() => ({ ...emptyGame(), ...data, settings: { ...DEFAULT_SETTINGS, ...data.settings } })),
+      replaceAll: (data) => set(() => ({ ...emptyGame(), ...normalizeGame(data), settings: { ...DEFAULT_SETTINGS, ...data.settings } })),
       newCampaign: (name) => set(() => emptyGame(name)),
     })),
     {
@@ -212,7 +267,7 @@ export const useGame = create<GameData & Actions>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => pickData(s),
       merge: (persisted, current) => {
-        const p = persisted as Partial<GameData> | undefined
+        const p = persisted ? normalizeGame(persisted as Partial<GameData>) : undefined
         return { ...current, ...p, settings: { ...DEFAULT_SETTINGS, ...p?.settings } }
       },
     },

@@ -126,3 +126,21 @@ export function signed(n: number): string {
 export function rollExprWithBonus(bonus: number, die = '1d20'): string {
   return bonus === 0 ? die : `${die}${signed(bonus)}`
 }
+
+/** Average result of simple notation like "2d8+2" (rounded down, as stat blocks do). Returns null if it can't tell. */
+export function averageRoll(input: string): number | null {
+  const expr = input.replace(/\s+/g, '').toLowerCase()
+  if (!expr) return null
+  const tokens = expr.match(/[+-]?[^+-]+/g) ?? []
+  if (tokens.join('') !== expr) return null
+  let total = 0
+  for (const tok of tokens) {
+    const sign = tok.startsWith('-') ? -1 : 1
+    const body = tok.replace(/^[+-]/, '')
+    const m = /^(\d*)d(\d+)$/.exec(body)
+    if (/^\d+$/.test(body)) total += sign * Number(body)
+    else if (m) total += (sign * (Number(m[1] || 1) * (Number(m[2]) + 1))) / 2
+    else return null
+  }
+  return Math.floor(total)
+}

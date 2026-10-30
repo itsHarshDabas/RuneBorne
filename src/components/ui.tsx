@@ -1,5 +1,5 @@
-import type { LucideIcon } from 'lucide-react'
-import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { X, type LucideIcon } from 'lucide-react'
+import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'ghost' | 'danger' | 'subtle'
@@ -98,4 +98,27 @@ export function Badge({ children, className = '' }: { children: ReactNode; class
 
 export function Empty({ children }: { children: ReactNode }) {
   return <p className="rounded-lg border border-dashed border-edge p-6 text-center text-sm text-muted">{children}</p>
+}
+
+/** A themed modal window. Closes on Esc or a click on the backdrop. */
+export function Modal({ title, onClose, children, footer, wide }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-[fade-in_.12s_ease-out]" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div role="dialog" aria-modal="true" className={`flex max-h-[90vh] w-full flex-col rounded-xl border border-edge bg-panel shadow-2xl shadow-black/60 animate-[pop-in_.14s_ease-out] ${wide ? 'max-w-3xl' : 'max-w-md'}`}>
+        <header className="flex items-center justify-between border-b border-edge px-5 py-3">
+          <h2 className="font-display text-lg text-gold">{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 text-muted hover:text-parch">
+            <X size={16} />
+          </button>
+        </header>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        {footer && <footer className="flex justify-end gap-2 border-t border-edge px-5 py-3">{footer}</footer>}
+      </div>
+    </div>
+  )
 }
