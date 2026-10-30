@@ -4,6 +4,8 @@ A free, all-in-one toolkit for running D&D (2024 rules) at the table. Built for 
 
 Everything runs in the browser and saves automatically. No accounts, no subscriptions.
 
+**Play now: https://runeborne.vercel.app**
+
 ## What's inside
 
 | Tab | What it does |
