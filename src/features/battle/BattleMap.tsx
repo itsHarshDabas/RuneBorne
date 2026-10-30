@@ -10,6 +10,7 @@ import { clamp, fileToCompressedDataUrl, uid } from '../../lib/util'
 import { useGame, type GameData, type MapBoard, type Monster, type TokenSide } from '../../store/game'
 import { BattleBoard, type TokenView } from './BattleBoard'
 import { EnemyEditor } from './EnemyEditor'
+import { POI_LABEL, type PoiType } from '../atlas/pois'
 import { BATTLE_PRESETS, BATTLE_SIZES, battleMapImage } from './generate'
 import { TOKEN_COLORS, TOKEN_ICONS } from './icons'
 
@@ -427,6 +428,7 @@ function MapCard({ map }: { map: MapBoard }) {
         <Field label="Style">
           <select className="input" value={map.gen ? preset : ''} onChange={(e) => generate({ preset: e.target.value })}>
             {!map.gen && <option value="">Your image</option>}
+            {map.gen?.preset.startsWith('house:') && <option value={preset}>Building: {POI_LABEL[preset.slice(6) as PoiType] ?? 'interior'}</option>}
             {BATTLE_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
         </Field>

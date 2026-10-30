@@ -15,7 +15,7 @@ Everything runs in the browser and saves automatically. No accounts, no subscrip
 | **Spell Forge** | DM approves a new spell → player rolls to learn it → rolls its power tier → rolls its mana cost. Learned spells appear on the sheet with a Cast button |
 | **NPCs** | Random NPC generator (name, quirk, want, secret), attitude tracker, first-impression and social rolls that shift attitude, interaction log |
 | **Combat** | Initiative, turn order, rounds, HP, conditions, an attack helper (crits double the dice) that applies damage for you. Pull foes straight from your enemy list |
-| **Map** | **World map:** one click generates a whole continent. Zoom or click down through regions, towns and cities, then into shops, houses and dungeons. Shops, libraries, temples and townsfolk are on the map, and the GM can rename anything and change its state (closed, destroyed, hostile, dead…). The world is saved with the campaign. **Battle map:** paint a ready-to-play map in one click (forest clearing, road ambush, river crossing, ruins, cave, dungeon, tavern, snowy woods), upload your own, or send a building/dungeon from the world map. Build enemies with full stat blocks (or start from 10 SRD-based ones), drop them on the grid, and run the fight from the map: HP rings, turn highlight, conditions, one-click attacks, a 5 ft ruler, zoom and snap-to-grid |
+| **Map** | **World map:** one click generates a whole continent with realms, rivers, coasts, mountains and roads. Scroll to zoom smoothly from the continent into a walled city plan (wards, streets, market square, farmland, bridges, harbour), then double-click any building or dungeon to open its floor plan with rooms and furniture. Shops, libraries, temples and townsfolk are on the map, and the GM can rename anything and change its state (closed, destroyed, hostile, dead…). The world is saved with the campaign. **Battle map:** paint a ready-to-play map in one click (forest clearing, road ambush, river crossing, ruins, cave, dungeon, tavern, snowy woods), upload your own, or send a building/dungeon from the world map. Build enemies with full stat blocks (or start from 10 SRD-based ones), drop them on the grid, and run the fight from the map: HP rings, turn highlight, conditions, one-click attacks, a 5 ft ruler, zoom and snap-to-grid |
 | **Notes** | Searchable campaign notes with tags |
 | **Generators** | Names, taverns, loot, plot hooks, weather, quirks and a yes/no oracle |
 | **Saves** | Save slots, export/import campaign files, DM settings and house rules |
@@ -61,7 +61,7 @@ src/
   lib/dice.ts          dice notation parser and roller (+ dice.test.ts)
   data/                SRD and homebrew content
   features/            one file or folder per tab
-  features/world/      seeded world, region, town, building and dungeon generators + map viewer
+  features/atlas/      map engine: Voronoi continent, city plans, interiors, canvas viewer
   components/          shared UI pieces
 ```
 

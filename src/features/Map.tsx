@@ -1,7 +1,7 @@
 import { Globe, Grid3x3 } from 'lucide-react'
 import { useUi } from '../store/ui'
 import { BattleMap } from './battle/BattleMap'
-import { WorldMap } from './world/WorldMap'
+import { WorldMap } from './atlas/WorldMap'
 
 export function MapTab() {
   const mode = useUi((s) => s.mapMode)

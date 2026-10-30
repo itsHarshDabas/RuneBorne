@@ -1,11 +1,11 @@
 import { Dices, Map as MapIcon, MessageCircle, Save, ScrollText, Shield, Sparkles, Swords, Wand, type LucideIcon } from 'lucide-react'
+import { lazy, Suspense } from 'react'
 import { DialogHost } from './components/Dialog'
 import { RollLog } from './components/RollLog'
 import { Characters } from './features/characters/Characters'
 import { Combat } from './features/Combat'
 import { DiceTray } from './features/DiceTray'
 import { Generators } from './features/Generators'
-import { MapTab } from './features/Map'
 import { Notes } from './features/Notes'
 import { Npcs } from './features/Npcs'
 import { Saves } from './features/Saves'
@@ -13,7 +13,10 @@ import { SpellForge } from './features/SpellForge'
 import { useGame } from './store/game'
 import { TABS, useUi, type Tab } from './store/ui'
 
-const VIEWS: Record<Tab, () => React.JSX.Element> = {
+// The map engine is the heaviest part of the app, so it loads when the Map tab is first opened
+const MapTab = lazy(() => import('./features/Map').then((m) => ({ default: m.MapTab })))
+
+const VIEWS: Record<Tab, React.ComponentType> = {
   Dice: DiceTray,
   Characters,
   'Spell Forge': SpellForge,
@@ -69,7 +72,9 @@ export default function App() {
       </nav>
       <div className="flex min-h-0 flex-1 gap-4 p-4">
         <main className="min-w-0 flex-1 overflow-y-auto pb-8">
-          <View />
+          <Suspense fallback={<p className="p-4 text-sm text-muted">Loading the map engine…</p>}>
+            <View />
+          </Suspense>
         </main>
         <div className="hidden w-72 shrink-0 2xl:w-80 lg:block">
           <RollLog />

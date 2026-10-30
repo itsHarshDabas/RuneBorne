@@ -1,4 +1,5 @@
 import { createNoise2D } from 'simplex-noise'
+import { ROOM_LABELS, type PoiType } from '../atlas/pois'
 import { makeRng, type Rng } from '../world/random'
 
 // Procedural top-down battle maps, painted on a canvas.
@@ -29,18 +30,34 @@ type Ctx = CanvasRenderingContext2D
 type RGB = [number, number, number]
 type Pt = { x: number; y: number }
 
+/** A labelled room on a painted map, in grid cells. */
+export type MapRoom = { x: number; y: number; w: number; h: number; label: string }
+export type PaintedMap = { canvas: HTMLCanvasElement; rooms: MapRoom[] }
+
 const cache = new Map<string, string>()
+const canvasCache = new Map<string, PaintedMap>()
 
 export function battleMapImage(preset: string, seed: number, cols: number, rows: number): string {
   const key = `${preset}|${seed}|${cols}|${rows}`
   const hit = cache.get(key)
+  if (hit) return hit
+  const url = battleMapCanvas(preset, seed, cols, rows).canvas.toDataURL('image/jpeg', 0.9)
+  cache.set(key, url)
+  return url
+}
+
+/** Paints a map once and keeps the canvas, plus the rooms it laid out (for building and dungeon maps). */
+export function battleMapCanvas(preset: string, seed: number, cols: number, rows: number): PaintedMap {
+  const key = `${preset}|${seed}|${cols}|${rows}`
+  const hit = canvasCache.get(key)
   if (hit) return hit
   const canvas = document.createElement('canvas')
   canvas.width = cols * CELL_PX
   canvas.height = rows * CELL_PX
   const ctx = canvas.getContext('2d')!
   const p = new Painter(ctx, preset, seed, cols, rows)
-  switch (preset as BattlePreset) {
+  if (preset.startsWith('house:')) p.building(preset.slice(6))
+  else switch (preset as BattlePreset) {
     case 'road': p.road(); break
     case 'river': p.river(); break
     case 'ruins': p.ruins(); break
@@ -51,9 +68,9 @@ export function battleMapImage(preset: string, seed: number, cols: number, rows:
     default: p.forest(false)
   }
   p.vignette()
-  const url = canvas.toDataURL('image/jpeg', 0.9)
-  cache.set(key, url)
-  return url
+  const out = { canvas, rooms: p.rooms }
+  canvasCache.set(key, out)
+  return out
 }
 
 // ---------- colour helpers ----------
@@ -89,6 +106,7 @@ class Painter {
   n1: (x: number, y: number) => number
   n2: (x: number, y: number) => number
   occupied: { x: number; y: number; r: number }[] = []
+  rooms: MapRoom[] = []
   ctx: Ctx
   cols: number
   rows: number
@@ -944,10 +962,10 @@ class Painter {
   // ---------- indoor maps ----------
 
   /** Draws floors for every open cell, then thick walls around them. */
-  indoor(open: boolean[][], floor: (gx: number, gy: number) => void, wallCol: string) {
+  indoor(open: boolean[][], floor: (gx: number, gy: number) => void, wallCol: string, outside = '#1b1714') {
     const { ctx, C } = this
-    // Outside: dark rock with a subtle hatch
-    ctx.fillStyle = '#1b1714'
+    // Outside: dark rock (or street) with a subtle hatch
+    ctx.fillStyle = outside
     ctx.fillRect(0, 0, this.W, this.H)
     ctx.strokeStyle = 'rgba(255,255,255,.035)'
     ctx.lineWidth = 1
@@ -1010,6 +1028,7 @@ class Painter {
       rooms.push({ x, y, w, h })
     }
     rooms.sort((a, b) => a.x + a.y - (b.x + b.y))
+    this.rooms = rooms.map((r, i) => ({ ...r, label: String(i + 1) }))
     for (const r of rooms) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) open[y][x] = true
     const doors: { x: number; y: number; vertical: boolean }[] = []
     const inRoom = (x: number, y: number) => rooms.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h)
@@ -1242,6 +1261,339 @@ class Painter {
       const y = rng.range(1.6, this.rows - 2) * C
       if (rng.chance(0.5)) this.crate(x, y, rng.range(0, 0.5))
       else this.barrel(x, y)
+    }
+  }
+
+  // ---------- buildings from the town map ----------
+
+  /** A house, shop or hall: rooms split from the footprint, inner walls with doors, furniture per room. */
+  building(kind: string) {
+    const { C, rng, ctx } = this
+    const labels = ROOM_LABELS[kind as PoiType] ?? ROOM_LABELS.house!
+    type R = { x: number; y: number; w: number; h: number; locked?: boolean }
+    const foot: R = { x: 1, y: 1, w: this.cols - 2, h: this.rows - 2 }
+    const leaves: R[] = [foot]
+    const walls: { x0: number; y0: number; x1: number; y1: number; door: number; vertical: boolean }[] = []
+    const split = (i: number, ratio: number) => {
+      const r = leaves[i]
+      const vertical = r.w > r.h * 1.15 ? true : r.h > r.w * 1.15 ? false : rng.chance(0.5)
+      const span = vertical ? r.w : r.h
+      const at = Math.max(3, Math.min(span - 3, Math.round(span * ratio)))
+      if (span < 6) return false
+      const a: R = vertical ? { x: r.x, y: r.y, w: at, h: r.h } : { x: r.x, y: r.y, w: r.w, h: at }
+      const b: R = vertical ? { x: r.x + at, y: r.y, w: r.w - at, h: r.h } : { x: r.x, y: r.y + at, w: r.w, h: r.h - at }
+      leaves.splice(i, 1, a, b)
+      const len = vertical ? r.h : r.w
+      walls.push(vertical
+        ? { x0: r.x + at, y0: r.y, x1: r.x + at, y1: r.y + r.h, door: r.y + rng.int(1, len - 2), vertical }
+        : { x0: r.x, y0: r.y + at, x1: r.x + r.w, y1: r.y + at, door: r.x + rng.int(1, len - 2), vertical })
+      return true
+    }
+    // The main room keeps about 60% of the floor; the rest is split into smaller rooms
+    if (labels.length > 1 && split(0, rng.chance(0.5) ? 0.6 : 0.4)) {
+      const big = leaves[0].w * leaves[0].h >= leaves[1].w * leaves[1].h ? 0 : 1
+      leaves[big].locked = true
+    }
+    while (leaves.length < labels.length) {
+      const order = leaves.map((_, i) => i).filter((i) => !leaves[i].locked).sort((a, b) => leaves[b].w * leaves[b].h - leaves[a].w * leaves[a].h)
+      if (!order.some((i) => split(i, rng.range(0.38, 0.62)))) break
+    }
+    const sorted = [...leaves].sort((a, b) => Number(!!b.locked) - Number(!!a.locked) || b.w * b.h - a.w * a.h)
+    this.rooms = sorted.map((r, i) => ({ x: r.x, y: r.y, w: r.w, h: r.h, label: labels[i] ?? 'Room' }))
+
+    const stone = ['temple', 'guard', 'bank', 'shrine', 'stables'].includes(kind)
+    const open = Array.from({ length: this.rows }, (_, y) => Array.from({ length: this.cols }, (_, x) => x >= foot.x && y >= foot.y && x < foot.x + foot.w && y < foot.y + foot.h))
+    this.indoor(open, (gx, gy) => (stone ? this.flagstone(gx * C, gy * C) : this.plank(gx * C, gy * C, false)), '#2a1c10', '#4a4237')
+
+    // Inner walls, leaving a doorway
+    const t = C * 0.16
+    ctx.fillStyle = '#2a1c10'
+    for (const w of walls) {
+      if (w.vertical) {
+        ctx.fillRect(w.x0 * C - t / 2, w.y0 * C, t, (w.door - w.y0) * C)
+        ctx.fillRect(w.x0 * C - t / 2, (w.door + 1) * C, t, (w.y1 - w.door - 1) * C)
+      } else {
+        ctx.fillRect(w.x0 * C, w.y0 * C - t / 2, (w.door - w.x0) * C, t)
+        ctx.fillRect((w.door + 1) * C, w.y0 * C - t / 2, (w.x1 - w.door - 1) * C, t)
+      }
+    }
+    for (const w of walls) {
+      if (w.vertical) this.door(w.x0 * C - C / 2, w.door * C, true)
+      else this.door(w.door * C, w.y0 * C - C / 2, false)
+    }
+    // Front door on an outside wall of the main room
+    const m = this.rooms[0]
+    if (m.y + m.h === foot.y + foot.h) this.door((m.x + Math.floor(m.w / 2)) * C, (m.y + m.h) * C - C / 2, false)
+    else if (m.y === foot.y) this.door((m.x + Math.floor(m.w / 2)) * C, m.y * C - C / 2, false)
+    else if (m.x === foot.x) this.door(m.x * C - C / 2, (m.y + Math.floor(m.h / 2)) * C, true)
+    else this.door((m.x + m.w) * C - C / 2, (m.y + Math.floor(m.h / 2)) * C, true)
+
+    for (const r of this.rooms) this.furnish(r, kind)
+  }
+
+  furnish(r: MapRoom, kind: string) {
+    const { C, rng } = this
+    const L = r.label.toLowerCase()
+    const X = (gx: number) => (r.x + gx) * C
+    const Y = (gy: number) => (r.y + gy) * C
+    const cx = X(r.w / 2)
+    const cy = Y(r.h / 2)
+    const along = (n: number, fn: (x: number, y: number) => void) => {
+      for (let i = 0; i < n; i++) fn(X(rng.range(0.7, r.w - 0.7)), Y(rng.range(0.7, r.h - 0.7)))
+    }
+    if (/common|great hall|meeting|dining|lounge|waiting/.test(L)) {
+      if (r.w >= 6 && r.h >= 5) this.rug(cx - Math.min(4, r.w * 0.3) * C, cy - Math.min(3, r.h * 0.25) * C, Math.min(8, r.w * 0.6) * C, Math.min(6, r.h * 0.5) * C, kind === 'manor' ? '#3b4a7a' : '#7a2e2a')
+      if (/great|dining|meeting/.test(L) || kind === 'guild') {
+        for (let y = 2; y < r.h - 1.5; y += 3) this.longTable(cx, Y(y))
+      } else {
+        for (let y = 2; y < r.h - 1.2; y += 3.4) for (let x = 2.4; x < r.w - 2; x += 4) if (rng.chance(0.85)) this.roundTable(X(x + rng.range(-0.3, 0.3)), Y(y + rng.range(-0.3, 0.3)))
+      }
+      if (kind === 'tavern' || kind === 'inn') this.counter(X(r.w - 0.75), Y(1), (r.h - 2) * C, true)
+      this.hearth(X(0.5), cy, true)
+    } else if (/kitchen/.test(L)) {
+      this.counter(X(1), Y(0.7), (r.w - 2) * C, false)
+      this.hearth(cx, Y(r.h - 0.5), false)
+      along(2, (x, y) => this.barrel(x, y))
+    } else if (/cellar|store|storage|coal|herb|tack|hayloft|records|archive|stock/.test(L)) {
+      for (let i = 0; i < Math.min(10, r.w * r.h * 0.35); i++) {
+        const x = X(rng.chance(0.5) ? rng.range(0.6, 1.4) : rng.range(r.w - 1.4, r.w - 0.6))
+        const y = Y(rng.range(0.6, r.h - 0.6))
+        if (/records|archive/.test(L)) break
+        if (rng.chance(0.5)) this.crate(x, y, rng.range(0, 0.4))
+        else this.barrel(x, y)
+      }
+      if (/records|archive/.test(L)) for (let y = 1; y < r.h - 0.5; y += 1.8) this.shelf(cx, Y(y), (r.w - 1.6) * C, true)
+    } else if (/guest|bedroom|bedchamber|living|quarters|keeper|cell$|barracks/.test(L)) {
+      const n = /barracks|servants/.test(L) ? Math.max(2, Math.floor(r.w / 1.6)) : r.w > 4 && /guest/.test(L) ? 2 : 1
+      for (let i = 0; i < n; i++) this.bed(X(0.9 + i * 1.6), Y(1.2), /bedchamber/.test(L))
+      this.chest(X(r.w - 1), Y(r.h - 0.8))
+      if (r.w > 3) this.rug(X(r.w / 2 - 0.8), Y(r.h / 2), C * 1.6, C * 1.2, '#5b4a7a')
+    } else if (/reading|stacks|restricted|study|scriptorium|map room/.test(L)) {
+      for (let x = 0.8; x < r.w - 0.8; x += 1.6) this.shelf(X(x), Y(0.45), C * 1.4, true)
+      for (let y = 0.8; y < r.h - 0.8; y += 1.6) this.shelf(X(0.45), Y(y), C * 1.4, false)
+      if (/stacks|restricted/.test(L)) for (let y = 2.2; y < r.h - 1; y += 2) this.shelf(cx, Y(y), (r.w - 3) * C, true)
+      else if (/reading/.test(L)) for (let y = 2.6; y < r.h - 1.5; y += 2.8) for (let x = 3; x < r.w - 1.5; x += 3.4) this.desk(X(x), Y(y), '#e8e0c8')
+      else this.desk(cx, cy, /map/.test(L) ? '#d9c9a3' : '#e8e0c8')
+    } else if (/forge/.test(L)) {
+      this.hearth(X(1), Y(1), false)
+      this.anvil(cx, cy)
+      along(2, (x, y) => this.barrel(x, y))
+    } else if (/shop|storefront|showroom|counting/.test(L)) {
+      this.counter(X(1), Y(r.h - 1.6), (r.w - 2) * C, false)
+      for (let x = 0.8; x < r.w - 0.8; x += 1.6) this.shelf(X(x), Y(0.45), C * 1.4, true)
+      if (kind === 'general' || kind === 'blacksmith') along(3, (x, y) => this.crate(x, y, rng.range(0, 0.5)))
+    } else if (/laboratory|enchanting/.test(L)) {
+      this.desk(cx, cy, '#cfe3d8')
+      this.runeCircle(cx, cy, Math.min(r.w, r.h) * C * 0.38, /enchant/.test(L) ? '#8b5cf6' : '#14b8a6')
+    } else if (/vault/.test(L)) {
+      for (let i = 0; i < Math.max(2, r.w - 1); i++) this.chest(X(0.9 + i * 1.1), Y(0.8))
+    } else if (/nave/.test(L)) {
+      this.rug(cx - C * 0.7, Y(2), C * 1.4, (r.h - 2.5) * C, '#7a2e2a')
+      this.altar(cx, Y(1))
+      for (let y = 3; y < r.h - 1; y += 1.3) {
+        this.pew(X(r.w / 2 - 1.4), Y(y), C * 2)
+        this.pew(X(r.w / 2 + 1.4), Y(y), C * 2)
+      }
+    } else if (/altar|shrine/.test(L)) {
+      this.altar(cx, Y(1))
+      this.runeCircle(cx, cy, Math.min(r.w, r.h) * C * 0.32, '#facc15')
+    } else if (/armoury/.test(L)) {
+      for (let x = 0.8; x < r.w - 0.8; x += 1.6) this.rack(X(x), Y(0.45))
+      along(2, (x, y) => this.crate(x, y))
+    } else if (/cells/.test(L)) {
+      for (let x = 0; x < r.w; x += 2) this.bars(X(x), Y(r.h - 0.6), C * 2)
+    } else if (/stalls/.test(L)) {
+      for (let x = 1; x < r.w; x += 2) this.hay(X(x), Y(1))
+    } else if (/guard room|office|crypt/.test(L)) {
+      this.desk(cx, cy, '#e8e0c8')
+      if (/office/.test(L)) this.shelf(X(r.w / 2), Y(0.45), C * 2, true)
+    } else {
+      along(3, (x, y) => (rng.chance(0.5) ? this.crate(x, y) : this.barrel(x, y)))
+    }
+  }
+
+  rug(x: number, y: number, w: number, h: number, col: string) {
+    const { ctx } = this
+    if (w <= 0 || h <= 0) return
+    ctx.fillStyle = col
+    ctx.fillRect(x, y, w, h)
+    ctx.strokeStyle = '#c9a227'
+    ctx.lineWidth = 2.5
+    ctx.strokeRect(x + 5, y + 5, w - 10, h - 10)
+  }
+
+  counter(x: number, y: number, len: number, vertical: boolean) {
+    const { ctx, C } = this
+    const w = vertical ? C * 0.8 : len
+    const h = vertical ? len : C * 0.8
+    const x0 = vertical ? x - w / 2 : x
+    this.withShadow(8, 5, 6, 0.55, () => {
+      ctx.fillStyle = '#5a3a1e'
+      ctx.fillRect(x0, y, w, h)
+    })
+    ctx.fillStyle = '#8a5d33'
+    ctx.fillRect(x0 + 3, y + 3, w - 6, h - 6)
+  }
+
+  hearth(x: number, y: number, vertical: boolean) {
+    const { ctx, C } = this
+    const w = vertical ? C * 0.9 : C * 2
+    const h = vertical ? C * 2 : C * 0.9
+    ctx.fillStyle = '#4b4540'
+    ctx.fillRect(x - w / 2, y - h / 2, w, h)
+    ctx.fillStyle = '#1a120c'
+    ctx.fillRect(x - w / 2 + 8, y - h / 2 + 8, w - 16, h - 16)
+    ctx.save()
+    ctx.globalCompositeOperation = 'lighter'
+    const g = ctx.createRadialGradient(x, y, 0, x, y, C * 2.6)
+    g.addColorStop(0, 'rgba(255,160,60,.5)')
+    g.addColorStop(1, 'rgba(255,120,40,0)')
+    ctx.fillStyle = g
+    ctx.fillRect(x - C * 2.6, y - C * 2.6, C * 5.2, C * 5.2)
+    ctx.restore()
+  }
+
+  bed(x: number, y: number, grand: boolean) {
+    const { ctx, C } = this
+    const w = C * (grand ? 1.6 : 0.95)
+    const h = C * 1.8
+    this.withShadow(8, 5, 6, 0.5, () => {
+      ctx.fillStyle = '#5a3a1e'
+      ctx.fillRect(x - w / 2, y - C * 0.6, w, h)
+    })
+    ctx.fillStyle = grand ? '#7a2e3a' : '#6b7a8f'
+    ctx.fillRect(x - w / 2 + 3, y - C * 0.6 + C * 0.5, w - 6, h - C * 0.5 - 3)
+    ctx.fillStyle = '#eee6d2'
+    ctx.fillRect(x - w / 2 + 5, y - C * 0.6 + 5, w - 10, C * 0.36)
+  }
+
+  shelf(x: number, y: number, len: number, horizontal: boolean) {
+    const { ctx, C, rng } = this
+    const w = horizontal ? len : C * 0.5
+    const h = horizontal ? C * 0.5 : len
+    ctx.fillStyle = '#3e2a17'
+    ctx.fillRect(x - w / 2, y - h / 2, w, h)
+    const books = ['#7a2e2a', '#2e4a7a', '#4a6a2e', '#8a6a2a', '#5a2e6a', '#2e6a6a']
+    const n = Math.floor((horizontal ? w : h) / 6)
+    for (let i = 0; i < n; i++) {
+      ctx.fillStyle = rng.pick(books)
+      if (horizontal) ctx.fillRect(x - w / 2 + 3 + i * 6, y - h / 2 + 4, 4.5, h - 8)
+      else ctx.fillRect(x - w / 2 + 4, y - h / 2 + 3 + i * 6, w - 8, 4.5)
+    }
+  }
+
+  desk(x: number, y: number, paper: string) {
+    const { ctx, C, rng } = this
+    this.withShadow(8, 5, 6, 0.55, () => {
+      ctx.fillStyle = '#6e4a27'
+      ctx.fillRect(x - C * 0.9, y - C * 0.45, C * 1.8, C * 0.9)
+    })
+    ctx.fillStyle = paper
+    for (let i = 0; i < 3; i++) ctx.fillRect(x + rng.range(-C * 0.7, C * 0.3), y + rng.range(-C * 0.35, C * 0.05), C * 0.3, C * 0.35)
+    this.stool(x, y + C * 0.8)
+  }
+
+  anvil(x: number, y: number) {
+    const { ctx, C } = this
+    this.withShadow(8, 5, 6, 0.6, () => {
+      ctx.fillStyle = '#3d3d3d'
+      ctx.beginPath()
+      ctx.moveTo(x - C * 0.5, y - C * 0.2)
+      ctx.lineTo(x + C * 0.3, y - C * 0.2)
+      ctx.lineTo(x + C * 0.55, y)
+      ctx.lineTo(x + C * 0.3, y + C * 0.2)
+      ctx.lineTo(x - C * 0.5, y + C * 0.2)
+      ctx.closePath()
+      ctx.fill()
+    })
+    ctx.fillStyle = 'rgba(255,255,255,.15)'
+    ctx.fillRect(x - C * 0.45, y - C * 0.15, C * 0.7, C * 0.08)
+  }
+
+  runeCircle(x: number, y: number, r: number, col: string) {
+    const { ctx } = this
+    ctx.save()
+    ctx.strokeStyle = col
+    ctx.globalAlpha = 0.6
+    ctx.lineWidth = 2
+    for (const k of [1, 0.8]) {
+      ctx.beginPath()
+      ctx.arc(x, y, r * k, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+    ctx.beginPath()
+    for (let i = 0; i <= 5; i++) {
+      const a = -Math.PI / 2 + (i * 4 * Math.PI) / 5
+      const px = x + Math.cos(a) * r * 0.8
+      const py = y + Math.sin(a) * r * 0.8
+      if (i) ctx.lineTo(px, py)
+      else ctx.moveTo(px, py)
+    }
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  pew(x: number, y: number, len: number) {
+    const { ctx, C } = this
+    ctx.fillStyle = '#5c3d20'
+    ctx.fillRect(x - len / 2, y - C * 0.18, len, C * 0.36)
+    ctx.fillStyle = 'rgba(255,255,255,.08)'
+    ctx.fillRect(x - len / 2, y - C * 0.18, len, 2)
+  }
+
+  altar(x: number, y: number) {
+    const { ctx, C } = this
+    this.withShadow(10, 6, 8, 0.6, () => {
+      ctx.fillStyle = '#d6d0c2'
+      ctx.fillRect(x - C, y - C * 0.4, C * 2, C * 0.8)
+    })
+    ctx.fillStyle = '#c9a227'
+    ctx.fillRect(x - C * 0.08, y - C * 0.3, C * 0.16, C * 0.6)
+    ctx.fillRect(x - C * 0.25, y - C * 0.12, C * 0.5, C * 0.14)
+  }
+
+  rack(x: number, y: number) {
+    const { ctx, C } = this
+    ctx.fillStyle = '#3e2a17'
+    ctx.fillRect(x - C * 0.7, y - C * 0.2, C * 1.4, C * 0.4)
+    ctx.strokeStyle = '#b8b8b8'
+    ctx.lineWidth = 2
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath()
+      ctx.moveTo(x + i * C * 0.25, y - C * 0.35)
+      ctx.lineTo(x + i * C * 0.25, y + C * 0.35)
+      ctx.stroke()
+    }
+  }
+
+  bars(x: number, y: number, len: number) {
+    const { ctx } = this
+    ctx.strokeStyle = '#6b6b6b'
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    ctx.lineTo(x + len, y)
+    ctx.stroke()
+    ctx.lineWidth = 2
+    for (let i = 4; i < len; i += 9) {
+      ctx.beginPath()
+      ctx.arc(x + i, y, 2, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  }
+
+  hay(x: number, y: number) {
+    const { ctx, C, rng } = this
+    ctx.strokeStyle = '#d8b84a'
+    ctx.lineWidth = 1.5
+    for (let i = 0; i < 26; i++) {
+      const a = rng.range(0, Math.PI)
+      const px = x + rng.range(-C * 0.6, C * 0.6)
+      const py = y + rng.range(-C * 0.5, C * 0.5)
+      ctx.beginPath()
+      ctx.moveTo(px, py)
+      ctx.lineTo(px + Math.cos(a) * 8, py + Math.sin(a) * 8)
+      ctx.stroke()
     }
   }
 
