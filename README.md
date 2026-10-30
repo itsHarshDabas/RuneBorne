@@ -10,15 +10,15 @@ Everything runs in the browser and saves automatically. No accounts, no subscrip
 
 | Tab | What it does |
 | --- | --- |
-| 🎲 **Dice** | d4 to d100, any weird die (`1d7`), advantage/disadvantage, exploding dice (`1d6!`), Fudge dice (`4dF`), keep/drop (`4d6dl1`), saved roll buttons |
-| 🛡 **Characters** | Creator with rolled stats (+ DM-controlled rerolls), point buy or standard array, class/species/background from the SRD, homebrew **bloodlines** and a 3-card **Tarot of Fate**. Full sheet with clickable checks, saves, skills, HP, mana and level-ups |
-| ✨ **Spell Forge** | DM approves a new spell → player rolls to learn it → rolls its power tier → rolls its mana cost. Learned spells appear on the sheet with a Cast button |
-| 🗣 **NPCs** | Random NPC generator (name, quirk, want, secret), attitude tracker, first-impression and social rolls that shift attitude, interaction log |
-| ⚔ **Combat** | Initiative, turn order, rounds, HP, conditions, an attack helper (crits double the dice) that applies damage for you |
-| 🗺 **Map** | Upload a map (e.g. from Watabou's generators), grid overlay, draggable tokens |
-| 📜 **Notes** | Searchable campaign notes with tags |
-| 🔮 **Generators** | Names, taverns, loot, plot hooks, weather, quirks and a yes/no oracle |
-| 💾 **Saves** | Save slots, export/import campaign files, DM settings and house rules |
+| **Dice** | d4 to d100, any weird die (`1d7`), advantage/disadvantage, exploding dice (`1d6!`), Fudge dice (`4dF`), keep/drop (`4d6dl1`), saved roll buttons |
+| **Characters** | Creator with rolled stats (+ DM-controlled rerolls), point buy or standard array, class/species/background from the SRD, homebrew **bloodlines** and a 3-card **Tarot of Fate**. Full sheet with clickable checks, saves, skills, HP, mana and level-ups |
+| **Spell Forge** | DM approves a new spell → player rolls to learn it → rolls its power tier → rolls its mana cost. Learned spells appear on the sheet with a Cast button |
+| **NPCs** | Random NPC generator (name, quirk, want, secret), attitude tracker, first-impression and social rolls that shift attitude, interaction log |
+| **Combat** | Initiative, turn order, rounds, HP, conditions, an attack helper (crits double the dice) that applies damage for you |
+| **Map** | **World map:** one click generates a whole continent. Zoom or click down through regions, towns and cities, then into shops, houses and dungeons. Shops, libraries, temples and townsfolk are on the map, and the GM can rename anything and change its state (closed, destroyed, hostile, dead…). The world is saved with the campaign. **Battle map:** upload any image or send a building/dungeon from the world map, then drag tokens |
+| **Notes** | Searchable campaign notes with tags |
+| **Generators** | Names, taverns, loot, plot hooks, weather, quirks and a yes/no oracle |
+| **Saves** | Save slots, export/import campaign files, DM settings and house rules |
 
 Every roll goes into the shared **Roll Log** on the right, tagged with who rolled it. Pick who is rolling from **Rolling as** at the top.
 
@@ -61,6 +61,7 @@ src/
   lib/dice.ts          dice notation parser and roller (+ dice.test.ts)
   data/                SRD and homebrew content
   features/            one file or folder per tab
+  features/world/      seeded world, region, town, building and dungeon generators + map viewer
   components/          shared UI pieces
 ```
 
@@ -77,4 +78,4 @@ Code is MIT licensed (see `LICENSE`).
 
 This work includes material from the System Reference Document 5.2 ("SRD 5.2") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
 
-Tarot of Fate, bloodlines, the mana system and the Spell Forge are original RuneBorne homebrew. Map generators are by [Watabou](https://watabou.itch.io/) and are linked, not bundled.
+Tarot of Fate, bloodlines, the mana system, the Spell Forge and the world generator are original RuneBorne work. Icons are from [Lucide](https://lucide.dev) (ISC license).

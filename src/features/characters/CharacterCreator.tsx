@@ -1,3 +1,4 @@
+import { Dices, Lock, Sparkles, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, Combo, Field } from '../../components/ui'
 import { BLOODLINES, TAROT, TAROT_POSITIONS } from '../../data/homebrew'
@@ -269,7 +270,7 @@ export function CharacterCreator({ onDone }: { onDone: (id: string | null) => vo
           <Field label="Bloodline">
             <div className="flex gap-2">
               <Combo id="cc-blood" value={bloodline} onChange={setBloodline} options={BLOODLINES.map((b) => b.name)} />
-              <Button size="sm" onClick={rollBloodline} title="Let fate decide">🎲</Button>
+              <Button size="sm" onClick={rollBloodline} title="Let fate decide" aria-label="Roll bloodline" icon={Dices} />
             </div>
           </Field>
         </div>
@@ -324,7 +325,7 @@ export function CharacterCreator({ onDone }: { onDone: (id: string | null) => vo
                 } ${fromBg ? 'cursor-default' : ''}`}
               >
                 {s.name} <span className="text-xs opacity-60">{s.ability.toUpperCase()}</span>
-                {fromBg && ' 🔒'}
+                {fromBg && <Lock size={11} className="ml-1 inline" />}
               </button>
             )
           })}
@@ -334,7 +335,7 @@ export function CharacterCreator({ onDone }: { onDone: (id: string | null) => vo
       <Card title="5 · Tarot of Fate" actions={<Badge>Redraws left: {redraws}</Badge>}>
         <p className="mb-3 text-sm text-muted">Draw three cards: where you came from, what you were given, and where you are headed. Reversed cards twist the meaning.</p>
         {tarot.length === 0 ? (
-          <Button variant="primary" onClick={drawTarot}>Draw the cards</Button>
+          <Button variant="primary" onClick={drawTarot} icon={Sparkles}>Draw the cards</Button>
         ) : (
           <div className="grid gap-3 md:grid-cols-3">
             {tarot.map((t, i) => (
@@ -348,7 +349,7 @@ export function CharacterCreator({ onDone }: { onDone: (id: string | null) => vo
         <p className="mb-3 text-sm text-muted">
           Starting HP {startingHp(className, finalScores.con)} · AC {10 + mod(finalScores.dex)} · Mana {startingMana(className, finalScores, bloodline)}. You can change anything later on the sheet.
         </p>
-        <Button variant="primary" onClick={create}>Create character</Button>
+        <Button variant="primary" onClick={create} icon={UserPlus}>Create character</Button>
       </Card>
     </div>
   )

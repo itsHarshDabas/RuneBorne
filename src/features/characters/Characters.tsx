@@ -1,3 +1,4 @@
+import { Trash2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { Button, Empty } from '../../components/ui'
 import { useGame } from '../../store/game'
@@ -39,9 +40,9 @@ export function Characters() {
             </span>
           </button>
         ))}
-        <Button variant="primary" onClick={() => setCreating(true)}>+ New character</Button>
+        <Button variant="primary" onClick={() => setCreating(true)} icon={UserPlus}>New character</Button>
         {active && (
-          <Button variant="danger" size="sm" className="ml-auto" onClick={() => remove(active.id, active.name)}>
+          <Button variant="danger" size="sm" className="ml-auto" onClick={() => remove(active.id, active.name)} icon={Trash2}>
             Delete {active.name}
           </Button>
         )}

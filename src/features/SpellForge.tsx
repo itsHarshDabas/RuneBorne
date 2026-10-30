@@ -1,3 +1,4 @@
+import { Dices } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, Combo, Empty, Field, NumberInput } from '../components/ui'
 import { POWER_TIERS, powerTier, SPELL_SCHOOLS } from '../data/homebrew'
@@ -153,7 +154,7 @@ export function SpellForge() {
                   <p>
                     Roll d20 {signed(learnBonus)} (casting mod + proficiency{extraBonus ? ' + extra' : ''}) against DC <b>{dc}</b>.
                   </p>
-                  <Button variant="primary" onClick={rollLearn}>🎲 Roll to learn</Button>
+                  <Button variant="primary" onClick={rollLearn} icon={Dices}>Roll to learn</Button>
                 </div>
               )}
               {stage === 'failed' && (
@@ -172,7 +173,7 @@ export function SpellForge() {
                 <div className="space-y-2">
                   {learnRoll !== null && <p className="text-emerald-300">Learned! (rolled {learnRoll} vs DC {dc})</p>}
                   <p>Now roll {settings.powerDie} to see how strong it is.</p>
-                  <Button variant="primary" onClick={rollPower}>🎲 Roll power</Button>
+                  <Button variant="primary" onClick={rollPower} icon={Dices}>Roll power</Button>
                 </div>
               )}
               {(stage === 'mana' || stage === 'done') && tier && (
@@ -187,7 +188,7 @@ export function SpellForge() {
                   {stage === 'mana' && (
                     <>
                       <p>Roll {settings.manaDie}{TIER_MANA_BONUS[tierIndex] ? ` + ${TIER_MANA_BONUS[tierIndex]} (tier)` : ''} for the mana cost.</p>
-                      <Button variant="primary" onClick={rollMana}>🎲 Roll mana cost</Button>
+                      <Button variant="primary" onClick={rollMana} icon={Dices}>Roll mana cost</Button>
                     </>
                   )}
                   {stage === 'done' && manaCost !== null && (

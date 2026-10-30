@@ -3,18 +3,6 @@ import { Button, Card, Field, NumberInput } from '../components/ui'
 import { clamp, fileToCompressedDataUrl, uid } from '../lib/util'
 import { useGame } from '../store/game'
 
-// Watabou's free procedural generators. They open in a new tab: export a PNG there, then upload it here.
-const GENERATORS = [
-  { name: 'One Page Dungeon', url: 'https://watabou.github.io/one-page-dungeon/', blurb: 'Instant dungeon with a story hook.' },
-  { name: 'Medieval City', url: 'https://watabou.github.io/city-generator/', blurb: 'Whole fantasy cities with walls and districts.' },
-  { name: 'Village', url: 'https://watabou.github.io/village-generator/', blurb: 'Small villages and hamlets.' },
-  { name: 'Dwellings', url: 'https://watabou.github.io/dwellings/', blurb: 'Floor plans for houses, inns and towers.' },
-  { name: 'Cave / Glade', url: 'https://watabou.github.io/cave-generator/', blurb: 'Caves, glades and natural areas.' },
-  { name: 'Perilous Shores', url: 'https://watabou.github.io/perilous-shores/', blurb: 'Regional maps for overland travel.' },
-  { name: 'Neighbourhood', url: 'https://watabou.github.io/neighbourhood/', blurb: 'A single city block, up close.' },
-  { name: 'All of Watabou on itch.io', url: 'https://watabou.itch.io/', blurb: 'Every generator, plus downloadable versions.' },
-]
-
 const TOKEN_COLORS = ['#38bdf8', '#f87171', '#34d399', '#facc15', '#a78bfa', '#fb923c', '#f472b6', '#e5e7eb']
 
 export function MapBoard() {
@@ -95,7 +83,7 @@ export function MapBoard() {
             <img src={map.image} alt="Battle map" className="block w-full" draggable={false} />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted">
-              Upload a map (e.g. exported from a Watabou generator) or paste an image link. Tokens work on the blank grid too.
+              Upload a map image, paste an image link, or open a building or dungeon in the World map and choose "Use as battle map". Tokens work on the blank grid too.
             </div>
           )}
           {map.showGrid && (
@@ -164,19 +152,6 @@ export function MapBoard() {
           </form>
         </Card>
 
-        <Card title="Map generators">
-          <p className="mb-2 text-xs text-muted">Free generators by Watabou. Generate a map, export it as PNG, then upload it above.</p>
-          <ul className="space-y-1.5">
-            {GENERATORS.map((g) => (
-              <li key={g.url}>
-                <a href={g.url} target="_blank" rel="noreferrer" className="block rounded-md border border-edge px-2.5 py-1.5 text-sm hover:border-gold">
-                  <span className="text-gold">{g.name} ↗</span>
-                  <span className="block text-xs text-muted">{g.blurb}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </Card>
       </div>
     </div>
   )

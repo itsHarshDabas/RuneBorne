@@ -99,6 +99,16 @@ export type LogEntry = {
   time: number
 }
 
+export const PLACE_STATES = ['Normal', 'Closed', 'Occupied', 'Abandoned', 'Destroyed', 'Cleared', 'Hidden'] as const
+export type PlaceState = (typeof PLACE_STATES)[number]
+export const MAP_NPC_STATES = ['Normal', 'Friendly', 'Hostile', 'Away', 'Missing', 'Captured', 'Dead'] as const
+export type MapNpcState = (typeof MAP_NPC_STATES)[number]
+export type PlaceEdit = { name?: string; state?: PlaceState; notes?: string }
+export type MapNpcEdit = { name?: string; role?: string; state?: MapNpcState; notes?: string }
+export type CustomMapNpc = { id: string; at: string; x: number; y: number; name: string; role: string }
+/** A generated world is stored as its seed plus whatever the GM changed, so it is identical on every load. */
+export type WorldSave = { seed: number; createdAt: number; places: Record<string, PlaceEdit>; npcs: Record<string, MapNpcEdit>; customNpcs: CustomMapNpc[] }
+
 export type Macro = { id: string; name: string; expr: string }
 
 export type Settings = {
@@ -119,6 +129,7 @@ export type GameData = {
   combat: { round: number; turn: number; combatants: Combatant[] }
   notes: Note[]
   map: MapBoard
+  world: WorldSave | null
   log: LogEntry[]
   macros: Macro[]
   settings: Settings
@@ -153,6 +164,7 @@ export function emptyGame(name = 'New Campaign'): GameData {
     combat: { round: 1, turn: 0, combatants: [] },
     notes: [],
     map: { image: '', grid: 50, showGrid: true, tokens: [] },
+    world: null,
     log: [],
     macros: [
       { id: 'm1', name: 'Stat roll', expr: '4d6dl1' },
@@ -165,8 +177,8 @@ export function emptyGame(name = 'New Campaign'): GameData {
 }
 
 export function pickData(s: GameData): GameData {
-  const { version, campaignName, characters, spells, npcs, combat, notes, map, log, macros, settings, activeCharacterId } = s
-  return { version, campaignName, characters, spells, npcs, combat, notes, map, log, macros, settings, activeCharacterId }
+  const { version, campaignName, characters, spells, npcs, combat, notes, map, world, log, macros, settings, activeCharacterId } = s
+  return { version, campaignName, characters, spells, npcs, combat, notes, map, world, log, macros, settings, activeCharacterId }
 }
 
 

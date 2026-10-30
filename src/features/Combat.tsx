@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight, Dices, Play, Plus, Swords, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Badge, Button, Card, Empty, Field, NumberInput } from '../components/ui'
 import { CONDITIONS } from '../data/srd'
@@ -128,9 +129,9 @@ export function Combat() {
         title={<>Combat · Round {combat.round}</>}
         actions={
           <>
-            <Button size="sm" onClick={() => nextTurn(-1)} disabled={!list.length}>◀ Prev</Button>
-            <Button size="sm" variant="primary" onClick={() => nextTurn(1)} disabled={!list.length}>Next turn ▶</Button>
-            <Button size="sm" onClick={() => rollInitiative(false)} disabled={!list.length}>🎲 Roll all initiative</Button>
+            <Button size="sm" onClick={() => nextTurn(-1)} disabled={!list.length} icon={ChevronLeft}>Prev</Button>
+            <Button size="sm" variant="primary" onClick={() => nextTurn(1)} disabled={!list.length} icon={ChevronRight}>Next turn</Button>
+            <Button size="sm" onClick={() => rollInitiative(false)} disabled={!list.length} icon={Dices}>Roll all initiative</Button>
             <Button
               size="sm"
               variant="danger"
@@ -165,7 +166,7 @@ export function Combat() {
 
       <div className="space-y-4">
         <Card title="Add combatants">
-          <Button className="mb-3 w-full" onClick={addParty} disabled={!characters.length}>+ Add the whole party</Button>
+          <Button className="mb-3 w-full" onClick={addParty} disabled={!characters.length} icon={Users}>Add the whole party</Button>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Name" className="col-span-2"><input className="input" value={foe.name} onChange={(e) => setFoe({ ...foe, name: e.target.value })} /></Field>
             <Field label="HP"><NumberInput value={foe.hp} onChange={(hp) => setFoe({ ...foe, hp })} /></Field>
@@ -173,7 +174,7 @@ export function Combat() {
             <Field label="Init bonus"><NumberInput value={foe.initBonus} onChange={(initBonus) => setFoe({ ...foe, initBonus })} /></Field>
             <Field label="How many"><NumberInput value={foe.count} min={1} max={20} onChange={(count) => setFoe({ ...foe, count: clamp(count, 1, 20) })} /></Field>
           </div>
-          <Button variant="primary" className="mt-3 w-full" onClick={addFoes}>+ Add foe{foe.count > 1 ? 's' : ''}</Button>
+          <Button variant="primary" className="mt-3 w-full" onClick={addFoes} icon={Plus}>Add foe{foe.count > 1 ? 's' : ''}</Button>
           {list.some((c) => c.init === null) && (
             <Button size="sm" variant="subtle" className="mt-2 w-full" onClick={() => rollInitiative(true)}>Roll initiative for newcomers only</Button>
           )}
@@ -206,7 +207,7 @@ export function Combat() {
                   </button>
                 ))}
               </div>
-              <Button variant="primary" className="w-full" disabled={!target} onClick={attack}>⚔ Roll attack</Button>
+              <Button variant="primary" className="w-full" disabled={!target} onClick={attack} icon={Swords}>Roll attack</Button>
               {lastAttack && (
                 <p className={`tumble rounded-md p-2 text-center text-sm ${lastAttack.crit ? 'bg-gold/20 text-gold' : lastAttack.hit ? 'bg-emerald-900/40 text-emerald-200' : 'bg-panel-2 text-muted'}`}>
                   {lastAttack.text}
@@ -236,7 +237,7 @@ function CombatRow({ c, active, onHp, onChange, onRemove }: { c: Combatant; acti
         />
         <div className="min-w-32 flex-1">
           <div className="font-semibold">
-            {active && '▶ '}
+            {active && <Play size={12} className="mr-1 inline fill-gold text-gold" />}
             {c.name} {down && <Badge className="text-red-300">Down</Badge>}
           </div>
           <div className="text-xs text-muted">AC {c.ac} · init {signed(c.initBonus)} · {c.side}</div>

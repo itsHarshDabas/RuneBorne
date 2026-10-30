@@ -1,9 +1,10 @@
+import { Dices, Map as MapIcon, MessageCircle, Save, ScrollText, Shield, Sparkles, Swords, Wand, type LucideIcon } from 'lucide-react'
 import { RollLog } from './components/RollLog'
 import { Characters } from './features/characters/Characters'
 import { Combat } from './features/Combat'
 import { DiceTray } from './features/DiceTray'
 import { Generators } from './features/Generators'
-import { MapBoard } from './features/MapBoard'
+import { MapTab } from './features/Map'
 import { Notes } from './features/Notes'
 import { Npcs } from './features/Npcs'
 import { Saves } from './features/Saves'
@@ -17,14 +18,14 @@ const VIEWS: Record<Tab, () => React.JSX.Element> = {
   'Spell Forge': SpellForge,
   NPCs: Npcs,
   Combat,
-  Map: MapBoard,
+  Map: MapTab,
   Notes,
   Generators,
   Saves,
 }
 
-const ICONS: Record<Tab, string> = {
-  Dice: '🎲', Characters: '🛡', 'Spell Forge': '✨', NPCs: '🗣', Combat: '⚔', Map: '🗺', Notes: '📜', Generators: '🔮', Saves: '💾',
+const ICONS: Record<Tab, LucideIcon> = {
+  Dice: Dices, Characters: Shield, 'Spell Forge': Sparkles, NPCs: MessageCircle, Combat: Swords, Map: MapIcon, Notes: ScrollText, Generators: Wand, Saves: Save,
 }
 
 export default function App() {
@@ -50,17 +51,20 @@ export default function App() {
         </label>
       </header>
       <nav className="flex gap-1 overflow-x-auto border-b border-edge bg-panel/60 px-2">
-        {TABS.map((t) => (
+        {TABS.map((t) => {
+          const Icon = ICONS[t]
+          return (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
             className={`shrink-0 border-b-2 px-3 py-2 text-sm transition ${tab === t ? 'border-gold text-gold' : 'border-transparent text-muted hover:text-parch'}`}
           >
-            <span className="mr-1">{ICONS[t]}</span>
+            <Icon size={15} className="mr-1.5 inline -mt-0.5" />
             {t}
           </button>
-        ))}
+          )
+        })}
       </nav>
       <div className="flex min-h-0 flex-1 gap-4 p-4">
         <main className="min-w-0 flex-1 overflow-y-auto pb-8">
