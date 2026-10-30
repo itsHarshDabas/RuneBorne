@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Cinzel", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --color-ink: #0f0d0b;
+  --color-panel: #1a1714;
+  --color-panel-2: #24201b;
+  --color-edge: #3a332b;
+  --color-parch: #efe6d4;
+  --color-muted: #a8998a;
+  --color-gold: #d4a24c;
+  --color-ember: #c2410c;
+  --color-blood: #b91c1c;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at top, #241d17 0%, var(--color-ink) 60%);
+  color: var(--color-parch);
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-md border border-edge bg-ink/60 px-2.5 py-1.5 text-sm text-parch placeholder:text-muted/60 outline-none focus:border-gold focus:ring-1 focus:ring-gold/40;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wider text-muted;
+  }
+}
+
+@keyframes tumble {
+  0% { transform: rotate(-25deg) scale(.6); opacity: .2 }
+  60% { transform: rotate(10deg) scale(1.15); opacity: 1 }
+  100% { transform: rotate(0) scale(1) }
+}
+.tumble { animation: tumble .45s ease-out; }
