@@ -1,4 +1,5 @@
 import { Dices, Map as MapIcon, MessageCircle, Save, ScrollText, Shield, Sparkles, Swords, Wand, type LucideIcon } from 'lucide-react'
+import { DialogHost } from './components/Dialog'
 import { RollLog } from './components/RollLog'
 import { Characters } from './features/characters/Characters'
 import { Combat } from './features/Combat'
@@ -74,6 +75,7 @@ export default function App() {
           <RollLog />
         </div>
       </div>
+      <DialogHost />
     </div>
   )
 }

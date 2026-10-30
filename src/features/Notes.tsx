@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button, Card, Empty, Field } from '../components/ui'
 import { uid } from '../lib/util'
 import { useGame } from '../store/game'
+import { dialog } from '../lib/dialog'
 
 export function Notes() {
   const notes = useGame((s) => s.notes)
@@ -49,7 +50,7 @@ export function Notes() {
       {note ? (
         <Card
           actions={
-            <Button size="sm" variant="danger" onClick={() => confirm(`Delete "${note.title}"?`) && (edit((d) => void (d.notes = d.notes.filter((x) => x.id !== note.id))), setSelectedId(null))}>
+            <Button size="sm" variant="danger" onClick={async () => (await dialog.confirm({ title: `Delete "${note.title}"?`, confirmLabel: 'Delete', danger: true })) && (edit((d) => void (d.notes = d.notes.filter((x) => x.id !== note.id))), setSelectedId(null))}>
               Delete
             </Button>
           }

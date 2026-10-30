@@ -4,6 +4,7 @@ import { Button, Empty } from '../../components/ui'
 import { useGame } from '../../store/game'
 import { CharacterCreator } from './CharacterCreator'
 import { CharacterSheet } from './CharacterSheet'
+import { dialog } from '../../lib/dialog'
 
 export function Characters() {
   const characters = useGame((s) => s.characters)
@@ -15,8 +16,8 @@ export function Characters() {
 
   if (creating) return <CharacterCreator onDone={() => setCreating(false)} />
 
-  function remove(id: string, name: string) {
-    if (!confirm(`Delete ${name}? This can't be undone (unless you have a save).`)) return
+  async function remove(id: string, name: string) {
+    if (!(await dialog.confirm({ title: `Delete ${name}?`, message: "This can't be undone unless you have a save.", confirmLabel: 'Delete', danger: true }))) return
     edit((d) => {
       d.characters = d.characters.filter((c) => c.id !== id)
       if (d.activeCharacterId === id) d.activeCharacterId = d.characters[0]?.id ?? null
